@@ -1,6 +1,8 @@
 # ha-switchbot-curtain
 Controls switchbot curtain using Home Assistant
 
+![](../main/switchbot.jpeg)
+
 Supported operations:
   - open / close / stop
   - set position [0-100]%
