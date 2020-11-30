@@ -4,7 +4,6 @@ from typing import Any, Dict
 # pylint: disable=import-error, no-member
 import switchbot
 import voluptuous as vol
-from time import sleep
 import logging
 
 from homeassistant.const import CONF_MAC, CONF_NAME, CONF_PASSWORD, STATE_OPEN, STATE_CLOSED, STATE_OPENING, STATE_CLOSING
@@ -60,7 +59,6 @@ class SwitchBotCurtain(CoverEntity, RestoreEntity):
         self._name = name
         self._mac = mac
         self._device = switchbot.Switchbot(mac=mac, password=password)
-        self._sleep = sleep
         self._pos = 0
 
     async def async_added_to_hass(self):
@@ -69,7 +67,12 @@ class SwitchBotCurtain(CoverEntity, RestoreEntity):
         state = await self.async_get_last_state()
         if not state:
             return
+        _LOGGER.info('Switchbot state %s', state)
         self._state = state.state
+
+        if 'current_position' in state.attributes:
+            self._pos = state.attributes["current_position"]
+        
 
     @property
     def assumed_state(self) -> bool:
@@ -89,7 +92,7 @@ class SwitchBotCurtain(CoverEntity, RestoreEntity):
     @property
     def device_state_attributes(self) -> Dict[str, Any]:
         """Return the state attributes."""
-        return {"last_run_success": self._last_run_success}
+        return { "last_run_success": self._last_run_success }
 
     @property
     def device_class(self) -> str:
@@ -102,27 +105,9 @@ class SwitchBotCurtain(CoverEntity, RestoreEntity):
         return SUPPORT_OPEN | SUPPORT_CLOSE | SUPPORT_STOP | SUPPORT_SET_POSITION
 
     @property
-    def is_opening(self):
-        """Return if the cover is opening or not."""
-        if (self._state == STATE_OPENING):
-            return True
-        return False
-
-    @property
-    def is_closing(self):
-        """Return if the cover is closing or not."""
-        if (self._state == STATE_CLOSING):
-            return True
-        return False
-
-    @property
     def is_closed(self):
-        """Return if the cover is closed or not."""
-        if (self._state == STATE_CLOSED):
-            return True
-        elif (self._state == STATE_OPEN):
-            return False
-        return None
+        """Return if the cover is closed."""
+        return self.current_cover_position <= 0
 
     def open_cover(self, **kwargs) -> None:
         """Open the curtain with using this device."""
@@ -132,11 +117,7 @@ class SwitchBotCurtain(CoverEntity, RestoreEntity):
         """Open curtain"""
         if self._device._sendcommand(OPEN_KEY, BLE_RETRY_COUNT):
             self._last_run_success = True
-            # self._state = STATE_OPENING
-            # _LOGGER.info('Switchbot command sent %s', self._mac)
-            # self._sleep(SWITCHBOT_WAIT_SEC)
-            self._state = STATE_OPEN
-            self._pos = 0
+            self._pos = 100
         else:
             self._last_run_success = False
         
@@ -149,11 +130,7 @@ class SwitchBotCurtain(CoverEntity, RestoreEntity):
         """Close curtain"""
         if self._device._sendcommand(CLOSE_KEY, BLE_RETRY_COUNT):
             self._last_run_success = True
-            # self._state = STATE_CLOSING
-            # _LOGGER.info('Switchbot command sent %s', self._mac)
-            # self._sleep(SWITCHBOT_WAIT_SEC)
-            self._state = STATE_CLOSED
-            self._pos = 100
+            self._pos = 0
         else:
             self._last_run_success = False
 
@@ -164,27 +141,25 @@ class SwitchBotCurtain(CoverEntity, RestoreEntity):
 
         """Stop curtain"""
         if self._device._sendcommand(STOP_KEY, BLE_RETRY_COUNT):
-            _LOGGER.info('Switchbot command sent %s', self._mac)
-            # self._state = None
+            self._last_run_success = True
+        else:
+            self._last_run_success = False
         
 
     def set_cover_position(self, **kwargs):
         """Move the cover shutter to a specific position."""
         position = kwargs.get(ATTR_POSITION)
-        hexPosition = "%0.2X" % position
+        hexPosition = "%0.2X" % (100 - position) # curtain position in reverse mode
         
         _LOGGER.info('Switchbot to move at %d %s...', position, self._mac)
         
         if self._device._sendcommand(POSITION_KEY + hexPosition, BLE_RETRY_COUNT):
-            _LOGGER.info('Switchbot command sent %s', self._mac)
-            # self._sleep(SWITCHBOT_WAIT_SEC)
             self._pos = position
-            self._state = STATE_CLOSED if position > 99 else STATE_OPEN
+            self._last_run_success = True
+        else:
+            self._last_run_success = False
 
     @property
     def current_cover_position(self):
         """Return the current position of cover shutter."""
-        if not self._pos:
-            return None
-
         return self._pos
