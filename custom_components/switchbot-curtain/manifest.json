@@ -1,8 +1,14 @@
 {
   "domain": "switchbot-curtain",
   "name": "SwitchBot Curtain",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "documentation": "https://www.home-assistant.io/integrations/switchbot-curtain",
-  "requirements": ["PySwitchbot==0.8.0"],
-  "codeowners": ["@danielhiversen", "@alextud"]
+  "requirements": [
+    "PySwitchbot==0.10.0"
+  ],
+  "codeowners": [
+    "@danielhiversen",
+    "@alextud"
+  ]
 }
+
