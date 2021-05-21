@@ -16,13 +16,6 @@ from homeassistant.components.cover import (
     SUPPORT_OPEN, SUPPORT_CLOSE, SUPPORT_STOP, SUPPORT_SET_POSITION,
 )
 
-
-OPEN_KEY      = '570f450105ff00'  #570F4501010100
-CLOSE_KEY     = '570f450105ff64'  #570F4501010164
-POSITION_KEY  = '570F450105ff' # +actual_position ex: 570F450105ff32 for 50%
-STOP_KEY      = '570F45010001'
-
-
 SWITCHBOT_WAIT_SEC = 10 #seconds
 BLE_RETRY_COUNT = 5
 
@@ -56,9 +49,11 @@ class SwitchBotCurtain(CoverEntity, RestoreEntity):
 
         self._state = None
         self._last_run_success = None
+        self._battery = None
+        self._light = None
         self._name = name
         self._mac = mac
-        self._device = switchbot.Switchbot(mac=mac, password=password)
+        self._device = switchbot.SwitchbotCurtain(mac=mac, password=password)
         self._pos = 0
 
     async def async_added_to_hass(self):
@@ -92,12 +87,17 @@ class SwitchBotCurtain(CoverEntity, RestoreEntity):
     @property
     def device_state_attributes(self) -> Dict[str, Any]:
         """Return the state attributes."""
-        return { "last_run_success": self._last_run_success }
+        return {
+            "last_run_success": self._last_run_success,
+            "battery": self._battery,
+            "light": self._light,
+        }
 
     @property
     def device_class(self) -> str:
         """Return the class of this device."""
         return DEVICE_CLASS_CURTAIN
+
 
     @property
     def supported_features(self):
@@ -115,9 +115,8 @@ class SwitchBotCurtain(CoverEntity, RestoreEntity):
         _LOGGER.info('Switchbot to open curtain %s...', self._mac)
 
         """Open curtain"""
-        if self._device._sendcommand(OPEN_KEY, BLE_RETRY_COUNT):
+        if self._device.open():
             self._last_run_success = True
-            self._pos = 100
         else:
             self._last_run_success = False
         
@@ -128,9 +127,8 @@ class SwitchBotCurtain(CoverEntity, RestoreEntity):
         _LOGGER.info('Switchbot to close the curtain %s...', self._mac)
 
         """Close curtain"""
-        if self._device._sendcommand(CLOSE_KEY, BLE_RETRY_COUNT):
+        if self._device.close():
             self._last_run_success = True
-            self._pos = 0
         else:
             self._last_run_success = False
 
@@ -140,7 +138,7 @@ class SwitchBotCurtain(CoverEntity, RestoreEntity):
         _LOGGER.info('Switchbot to stop %s...', self._mac)
 
         """Stop curtain"""
-        if self._device._sendcommand(STOP_KEY, BLE_RETRY_COUNT):
+        if self._device.stop():
             self._last_run_success = True
         else:
             self._last_run_success = False
@@ -149,12 +147,10 @@ class SwitchBotCurtain(CoverEntity, RestoreEntity):
     def set_cover_position(self, **kwargs):
         """Move the cover shutter to a specific position."""
         position = kwargs.get(ATTR_POSITION)
-        hexPosition = "%0.2X" % (100 - position) # curtain position in reverse mode
         
         _LOGGER.info('Switchbot to move at %d %s...', position, self._mac)
         
-        if self._device._sendcommand(POSITION_KEY + hexPosition, BLE_RETRY_COUNT):
-            self._pos = position
+        if self._device.set_position(position):
             self._last_run_success = True
         else:
             self._last_run_success = False
@@ -162,4 +158,9 @@ class SwitchBotCurtain(CoverEntity, RestoreEntity):
     @property
     def current_cover_position(self):
         """Return the current position of cover shutter."""
-        return self._pos
+        return self._device.get_position()
+
+    def update(self):
+        self._device.update()
+        self._light = self._device.get_light_level()
+        self._battery = self._device.get_battery_percent()
