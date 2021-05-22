@@ -3,9 +3,8 @@
   "name": "SwitchBot Curtain",
   "version": "0.1.2",
   "documentation": "https://www.home-assistant.io/integrations/switchbot-curtain",
-  "requirements": [
-    "PySwitchbot==0.10.0"
-  ],
+  "requirements": ["PySwitchbot==0.10.0", "pygatt[GATTTOOL]==4.0.5"],
+  "config_flow": true,
   "codeowners": [
     "@danielhiversen",
     "@alextud"
