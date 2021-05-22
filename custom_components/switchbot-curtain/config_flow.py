@@ -36,11 +36,11 @@ class SwitchbotConfigFlow(ConfigFlow, domain=DOMAIN):
         self._abort_if_unique_id_configured()
 
         # Validate bluetooth device mac.
-        # try:
-        #    await self.hass.async_add_executor_job(_btle_connect, data[CONF_MAC])
+        try:
+            await self.hass.async_add_executor_job(_btle_connect, data[CONF_MAC])
 
-        # except pygatt.exceptions.NotConnectedError as err:
-        #    raise pygatt.exceptions.NotConnectedError(err)
+        except pygatt.exceptions.NotConnectedError as err:
+            raise pygatt.exceptions.NotConnectedError(err)
 
         return self.async_create_entry(title=data[CONF_NAME], data=data)
 
