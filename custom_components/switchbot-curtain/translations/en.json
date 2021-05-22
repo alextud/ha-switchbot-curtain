@@ -1,0 +1,24 @@
+{
+    "config": {
+        "abort": {
+            "already_configured_device": "Device is already configured",
+            "unknown": "Unexpected error"
+        },
+        "error": {
+            "cannot_connect": "Failed to connect"
+        },
+        "flow_title": "{name}",
+        "step": {
+
+            "user": {
+                "data": {
+                    "name": "Name",
+                    "password": "Password",
+                    "mac": "Mac",
+                    "type": "Device type"
+                },
+                "title": "Setup Switchbot device"
+            }
+        }
+    }
+}

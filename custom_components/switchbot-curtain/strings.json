@@ -1,0 +1,23 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "Setup Switchbot device",
+        "data": {
+          "name": "[%key:common::config_flow::data::name%]",
+          "password": "[%key:common::config_flow::data::password%]",
+          "mac": "Device MAC address",
+          "type": "Device type"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]"
+    },
+    "abort": {
+      "already_configured_device": "[%key:common::config_flow::abort::already_configured_device%]",
+      "unknown": "[%key:common::config_flow::error::unknown%]"
+    }
+  }
+}

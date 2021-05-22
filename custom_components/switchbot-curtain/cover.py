@@ -1,50 +1,53 @@
-"""Support for Switchbot Curtain."""
-from typing import Any, Dict
+"""Support for SwitchBot curtains."""
+from __future__ import annotations
 
-# pylint: disable=import-error, no-member
-import switchbot
-import voluptuous as vol
 import logging
+from typing import Any
 
-from homeassistant.const import CONF_MAC, CONF_NAME, CONF_PASSWORD, STATE_OPEN, STATE_CLOSED, STATE_OPENING, STATE_CLOSING
-import homeassistant.helpers.config_validation as cv
+import switchbot
+
+from homeassistant.components.cover import (
+    ATTR_POSITION,
+    DEVICE_CLASS_CURTAIN,
+    SUPPORT_CLOSE,
+    SUPPORT_OPEN,
+    SUPPORT_SET_POSITION,
+    SUPPORT_STOP,
+    CoverEntity,
+)
+from homeassistant.const import CONF_MAC, CONF_NAME, CONF_PASSWORD, CONF_SENSOR_TYPE
 from homeassistant.helpers.restore_state import RestoreEntity
 
-# Import the device class
-from homeassistant.components.cover import (
-    CoverEntity, PLATFORM_SCHEMA, DEVICE_CLASS_CURTAIN, ATTR_POSITION,
-    SUPPORT_OPEN, SUPPORT_CLOSE, SUPPORT_STOP, SUPPORT_SET_POSITION,
-)
+from .const import ATTR_CURTAIN, DOMAIN, MANUFACTURER
 
-SWITCHBOT_WAIT_SEC = 10 #seconds
+SWITCHBOT_WAIT_SEC = 30  # seconds
 BLE_RETRY_COUNT = 5
 
 # Initialize the logger
 _LOGGER = logging.getLogger(__name__)
 
-DEFAULT_NAME = "Switchbot Curtain"
 
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
-    {
-        vol.Required(CONF_MAC): cv.string,
-        vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
-        vol.Optional(CONF_PASSWORD): cv.string,
-    }
-)
+async def async_setup_entry(hass, entry, async_add_entities):
+    """Set up Switchbot curtain based on a config entry."""
 
+    device = []
 
-def setup_platform(hass, config, add_entities, discovery_info=None):
-    """Perform the setup for Switchbot devices."""
-    name = config.get(CONF_NAME)
-    mac_addr = config[CONF_MAC]
-    password = config.get(CONF_PASSWORD)
-    add_entities([SwitchBotCurtain(mac_addr, name, password)])
+    if entry.data[CONF_SENSOR_TYPE] == ATTR_CURTAIN:
+        device.append(
+            SwitchBotCurtain(
+                entry.data[CONF_MAC],
+                entry.data[CONF_NAME],
+                entry.data.get(CONF_PASSWORD, None),
+            )
+        )
+
+    async_add_entities(device)
 
 
 class SwitchBotCurtain(CoverEntity, RestoreEntity):
     """Representation of a Switchbot."""
 
-    def __init__(self, mac, name, password) -> None:
+    def __init__(self, mac, name, password=None) -> None:
         """Initialize the Switchbot."""
 
         self._state = None
@@ -62,12 +65,11 @@ class SwitchBotCurtain(CoverEntity, RestoreEntity):
         state = await self.async_get_last_state()
         if not state:
             return
-        _LOGGER.info('Switchbot state %s', state)
+        _LOGGER.info("Switchbot state %s", state)
         self._state = state.state
 
-        if 'current_position' in state.attributes:
+        if "current_position" in state.attributes:
             self._pos = state.attributes["current_position"]
-        
 
     @property
     def assumed_state(self) -> bool:
@@ -85,7 +87,7 @@ class SwitchBotCurtain(CoverEntity, RestoreEntity):
         return self._name
 
     @property
-    def device_state_attributes(self) -> Dict[str, Any]:
+    def device_state_attributes(self) -> dict[str, Any]:
         """Return the state attributes."""
         return {
             "last_run_success": self._last_run_success,
@@ -97,7 +99,6 @@ class SwitchBotCurtain(CoverEntity, RestoreEntity):
     def device_class(self) -> str:
         """Return the class of this device."""
         return DEVICE_CLASS_CURTAIN
-
 
     @property
     def supported_features(self):
@@ -112,21 +113,18 @@ class SwitchBotCurtain(CoverEntity, RestoreEntity):
     def open_cover(self, **kwargs) -> None:
         """Open the curtain with using this device."""
 
-        _LOGGER.info('Switchbot to open curtain %s...', self._mac)
+        _LOGGER.info("Switchbot to open curtain %s", self._mac)
 
-        """Open curtain"""
         if self._device.open():
             self._last_run_success = True
         else:
             self._last_run_success = False
-        
 
     def close_cover(self, **kwargs) -> None:
         """Close the curtain with using this device."""
 
-        _LOGGER.info('Switchbot to close the curtain %s...', self._mac)
+        _LOGGER.info("Switchbot to close the curtain %s", self._mac)
 
-        """Close curtain"""
         if self._device.close():
             self._last_run_success = True
         else:
@@ -135,21 +133,19 @@ class SwitchBotCurtain(CoverEntity, RestoreEntity):
     def stop_cover(self, **kwargs) -> None:
         """Stop the moving of this device."""
 
-        _LOGGER.info('Switchbot to stop %s...', self._mac)
+        _LOGGER.info("Switchbot to stop %s", self._mac)
 
-        """Stop curtain"""
         if self._device.stop():
             self._last_run_success = True
         else:
             self._last_run_success = False
-        
 
     def set_cover_position(self, **kwargs):
         """Move the cover shutter to a specific position."""
         position = kwargs.get(ATTR_POSITION)
-        
-        _LOGGER.info('Switchbot to move at %d %s...', position, self._mac)
-        
+
+        _LOGGER.info("Switchbot to move at %d %s", position, self._mac)
+
         if self._device.set_position(position):
             self._last_run_success = True
         else:
@@ -160,7 +156,18 @@ class SwitchBotCurtain(CoverEntity, RestoreEntity):
         """Return the current position of cover shutter."""
         return self._device.get_position()
 
+    @property
+    def device_info(self):
+        """Return the device_info of the device."""
+        return {
+            "identifiers": {(DOMAIN, self._mac.replace(":", ""))},
+            "name": self._name,
+            "model": "Curtain",
+            "manufacturer": MANUFACTURER,
+        }
+
     def update(self):
+        """Update device attributes."""
         self._device.update()
         self._light = self._device.get_light_level()
         self._battery = self._device.get_battery_percent()

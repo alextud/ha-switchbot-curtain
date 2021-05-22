@@ -1,7 +1,7 @@
 {
   "domain": "switchbot-curtain",
   "name": "SwitchBot Curtain",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "documentation": "https://www.home-assistant.io/integrations/switchbot-curtain",
   "requirements": [
     "PySwitchbot==0.10.0"
@@ -9,6 +9,7 @@
   "codeowners": [
     "@danielhiversen",
     "@alextud"
-  ]
+  ],
+  "iot_class": "local_polling"
 }
 
