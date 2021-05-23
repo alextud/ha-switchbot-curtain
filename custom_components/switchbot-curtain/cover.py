@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+# pylint: disable=import-error
 import switchbot
 
 from homeassistant.components.cover import (
