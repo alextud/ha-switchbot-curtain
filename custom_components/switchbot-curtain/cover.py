@@ -3,9 +3,11 @@ from __future__ import annotations
 
 import logging
 from typing import Any
+import threading
 
 # pylint: disable=import-error
 import switchbot
+from bluepy.btle import BTLEInternalError
 
 from homeassistant.components.cover import (
     ATTR_POSITION,
@@ -21,8 +23,10 @@ from homeassistant.helpers.restore_state import RestoreEntity
 
 from .const import ATTR_CURTAIN, DOMAIN, MANUFACTURER
 
-SWITCHBOT_WAIT_SEC = 30  # seconds
-BLE_RETRY_COUNT = 5
+DEFAULT_RETRY_COUNT = 3
+DEFAULT_RETRY_TIMEOUT = 10
+DEFAULT_TIME_BETWEEN_UPDATE_COMMAND = 60
+CONNECT_LOCK = threading.Lock()
 
 # Initialize the logger
 _LOGGER = logging.getLogger(__name__)
@@ -167,8 +171,13 @@ class SwitchBotCurtain(CoverEntity, RestoreEntity):
             "manufacturer": MANUFACTURER,
         }
 
-#    def update(self):
-#        """Update device attributes."""
-#        self._device.update()
-#        self._light = self._device.get_light_level()
-#        self._battery = self._device.get_battery_percent()
+    def update(self):
+        """Update device attributes."""
+        try:
+            with CONNECT_LOCK:
+                self._device.update()
+                self._light = self._device.get_light_level()
+                self._battery = self._device.get_battery_percent()
+
+        except BTLEInternalError as err:
+            raise BTLEInternalError(err) from err
