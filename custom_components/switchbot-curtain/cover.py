@@ -167,8 +167,8 @@ class SwitchBotCurtain(CoverEntity, RestoreEntity):
             "manufacturer": MANUFACTURER,
         }
 
-    def update(self):
-        """Update device attributes."""
-        self._device.update()
-        self._light = self._device.get_light_level()
-        self._battery = self._device.get_battery_percent()
+#    def update(self):
+#        """Update device attributes."""
+#        self._device.update()
+#        self._light = self._device.get_light_level()
+#        self._battery = self._device.get_battery_percent()
