@@ -1,13 +1,15 @@
 """Support for SwitchBot curtains."""
 from __future__ import annotations
 
+from datetime import timedelta
 import logging
-from typing import Any
 import threading
+from typing import Any
+
+from bluepy.btle import BTLEInternalError
 
 # pylint: disable=import-error
 import switchbot
-from bluepy.btle import BTLEInternalError
 
 from homeassistant.components.cover import (
     ATTR_POSITION,
@@ -24,8 +26,9 @@ from homeassistant.helpers.restore_state import RestoreEntity
 from .const import ATTR_CURTAIN, DOMAIN, MANUFACTURER
 
 DEFAULT_RETRY_COUNT = 3
-DEFAULT_RETRY_TIMEOUT = 10
+DEFAULT_RETRY_TIMEOUT = 5
 DEFAULT_TIME_BETWEEN_UPDATE_COMMAND = 60
+SCAN_INTERVAL = timedelta(seconds=60)
 CONNECT_LOCK = threading.Lock()
 
 # Initialize the logger
