@@ -6,6 +6,7 @@ import logging
 import threading
 from typing import Any
 
+# pylint: disable=import-error
 from bluepy.btle import BTLEInternalError
 
 # pylint: disable=import-error
@@ -162,7 +163,7 @@ class SwitchBotCurtain(CoverEntity, RestoreEntity):
     @property
     def current_cover_position(self):
         """Return the current position of cover shutter."""
-        return self._device.get_position()
+        return self._pos
 
     @property
     def device_info(self):
@@ -181,6 +182,7 @@ class SwitchBotCurtain(CoverEntity, RestoreEntity):
                 self._device.update()
                 self._light = self._device.get_light_level()
                 self._battery = self._device.get_battery_percent()
+                self._pos = self._device.get_position()
 
         except BTLEInternalError as err:
             raise BTLEInternalError(err) from err
