@@ -20,5 +20,16 @@
                 "title": "Setup Switchbot device"
             }
         }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "data": {
+                    "update_time": "Time between updates (seconds)",
+                    "retry_count": "Retry count",
+                    "retry_timeout": "Timeout between retries"
+                }
+            }
+        }
     }
 }

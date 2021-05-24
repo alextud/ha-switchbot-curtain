@@ -24,11 +24,15 @@ from homeassistant.components.cover import (
 from homeassistant.const import CONF_MAC, CONF_NAME, CONF_PASSWORD, CONF_SENSOR_TYPE
 from homeassistant.helpers.restore_state import RestoreEntity
 
-from .const import ATTR_CURTAIN, DOMAIN, MANUFACTURER
+from .const import (
+    ATTR_CURTAIN,
+    CONF_RETRY_COUNT,
+    CONF_RETRY_TIMEOUT,
+    CONF_TIME_BETWEEN_UPDATE_COMMAND,
+    DOMAIN,
+    MANUFACTURER,
+)
 
-DEFAULT_RETRY_COUNT = 3
-DEFAULT_RETRY_TIMEOUT = 5
-DEFAULT_TIME_BETWEEN_UPDATE_COMMAND = 60
 SCAN_INTERVAL = timedelta(seconds=60)
 CONNECT_LOCK = threading.Lock()
 
@@ -40,6 +44,12 @@ async def async_setup_entry(hass, entry, async_add_entities):
     """Set up Switchbot curtain based on a config entry."""
 
     device = []
+
+    switchbot.DEFAULT_RETRY_COUNT = entry.options[CONF_RETRY_COUNT]
+    switchbot.DEFAULT_RETRY_TIMEOUT = entry.options[CONF_RETRY_TIMEOUT]
+    switchbot.DEFAULT_TIME_BETWEEN_UPDATE_COMMAND = entry.options[
+        CONF_TIME_BETWEEN_UPDATE_COMMAND
+    ]
 
     if entry.data[CONF_SENSOR_TYPE] == ATTR_CURTAIN:
         device.append(

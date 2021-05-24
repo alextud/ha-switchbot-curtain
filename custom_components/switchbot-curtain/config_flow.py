@@ -5,10 +5,21 @@ import threading
 import pygatt
 import voluptuous as vol
 
-from homeassistant.config_entries import ConfigFlow
+from homeassistant.config_entries import ConfigFlow, OptionsFlow
 from homeassistant.const import CONF_MAC, CONF_NAME, CONF_PASSWORD, CONF_SENSOR_TYPE
+from homeassistant.core import callback
 
-from .const import ATTR_BOT, ATTR_CURTAIN, DOMAIN
+from .const import (
+    ATTR_BOT,
+    ATTR_CURTAIN,
+    CONF_RETRY_COUNT,
+    CONF_RETRY_TIMEOUT,
+    CONF_TIME_BETWEEN_UPDATE_COMMAND,
+    DEFAULT_RETRY_COUNT,
+    DEFAULT_RETRY_TIMEOUT,
+    DEFAULT_TIME_BETWEEN_UPDATE_COMMAND,
+    DOMAIN,
+)
 
 CONNECT_LOCK = threading.Lock()
 CONNECT_TIMEOUT = 15
@@ -52,6 +63,12 @@ class SwitchbotConfigFlow(ConfigFlow, domain=DOMAIN):
             raise pygatt.exceptions.NotConnectedError(err)
 
         return self.async_create_entry(title=data[CONF_NAME], data=data)
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry):
+        """Get the options flow for this handler."""
+        return SwitchbotOptionsFlowHandler(config_entry)
 
     async def async_step_user(self, user_input=None):
         """Handle a flow initiated by the user."""
@@ -100,3 +117,40 @@ class SwitchbotConfigFlow(ConfigFlow, domain=DOMAIN):
         return self.async_create_entry(
             title=import_config[CONF_NAME], data=import_config
         )
+
+
+class SwitchbotOptionsFlowHandler(OptionsFlow):
+    """Handle Switchbot options."""
+
+    def __init__(self, config_entry):
+        """Initialize options flow."""
+        self.config_entry = config_entry
+
+    async def async_step_init(self, user_input=None):
+        """Manage Ezviz options."""
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+
+        options = {
+            vol.Optional(
+                CONF_TIME_BETWEEN_UPDATE_COMMAND,
+                default=self.config_entry.options.get(
+                    CONF_TIME_BETWEEN_UPDATE_COMMAND,
+                    DEFAULT_TIME_BETWEEN_UPDATE_COMMAND,
+                ),
+            ): int,
+            vol.Optional(
+                CONF_RETRY_COUNT,
+                default=self.config_entry.options.get(
+                    CONF_RETRY_COUNT, DEFAULT_RETRY_COUNT
+                ),
+            ): int,
+            vol.Optional(
+                CONF_RETRY_TIMEOUT,
+                default=self.config_entry.options.get(
+                    CONF_RETRY_TIMEOUT, DEFAULT_RETRY_TIMEOUT
+                ),
+            ): int,
+        }
+
+        return self.async_show_form(step_id="init", data_schema=vol.Schema(options))
