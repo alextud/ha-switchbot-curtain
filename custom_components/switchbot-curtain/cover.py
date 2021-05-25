@@ -33,7 +33,7 @@ from .const import (
     MANUFACTURER,
 )
 
-SCAN_INTERVAL = timedelta(seconds=60)
+SCAN_INTERVAL = timedelta(seconds=30)
 CONNECT_LOCK = threading.Lock()
 
 # Initialize the logger
@@ -127,7 +127,7 @@ class SwitchBotCurtain(CoverEntity, RestoreEntity):
     @property
     def is_closed(self):
         """Return if the cover is closed."""
-        return self.current_cover_position <= 0
+        return self._pos <= 10
 
     def open_cover(self, **kwargs) -> None:
         """Open the curtain with using this device."""

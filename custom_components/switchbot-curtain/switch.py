@@ -17,7 +17,15 @@ from homeassistant.const import CONF_MAC, CONF_NAME, CONF_PASSWORD, CONF_SENSOR_
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.restore_state import RestoreEntity
 
-from .const import ATTR_BOT, DEFAULT_NAME, DOMAIN, MANUFACTURER
+from .const import (
+    ATTR_BOT,
+    CONF_RETRY_COUNT,
+    CONF_RETRY_TIMEOUT,
+    CONF_TIME_BETWEEN_UPDATE_COMMAND,
+    DEFAULT_NAME,
+    DOMAIN,
+    MANUFACTURER,
+)
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
@@ -53,6 +61,12 @@ async def async_setup_entry(hass, entry, async_add_entities):
     """Set up Switchbot based on a config entry."""
 
     device = []
+
+    switchbot.DEFAULT_RETRY_COUNT = entry.options[CONF_RETRY_COUNT]
+    switchbot.DEFAULT_RETRY_TIMEOUT = entry.options[CONF_RETRY_TIMEOUT]
+    switchbot.DEFAULT_TIME_BETWEEN_UPDATE_COMMAND = entry.options[
+        CONF_TIME_BETWEEN_UPDATE_COMMAND
+    ]
 
     if entry.data[CONF_SENSOR_TYPE] == ATTR_BOT:
         device.append(
