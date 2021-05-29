@@ -1,18 +1,16 @@
 """Support for SwitchBot curtains."""
 from __future__ import annotations
 
+import asyncio
 from datetime import timedelta
 import logging
-import threading
 from typing import Any
-
-# pylint: disable=import-error
-from bluepy.btle import BTLEInternalError
 
 # pylint: disable=import-error
 import switchbot
 
 from homeassistant.components.cover import (
+    ATTR_CURRENT_POSITION,
     ATTR_POSITION,
     DEVICE_CLASS_CURTAIN,
     SUPPORT_CLOSE,
@@ -33,8 +31,9 @@ from .const import (
     MANUFACTURER,
 )
 
-SCAN_INTERVAL = timedelta(seconds=30)
-CONNECT_LOCK = threading.Lock()
+CONNECT_LOCK = asyncio.Lock()
+SCAN_INTERVAL = timedelta(seconds=35)
+PARALLEL_UPDATES = 1
 
 # Initialize the logger
 _LOGGER = logging.getLogger(__name__)
@@ -68,7 +67,6 @@ class SwitchBotCurtain(CoverEntity, RestoreEntity):
 
     def __init__(self, mac, name, password=None) -> None:
         """Initialize the Switchbot."""
-
         self._state = None
         self._last_run_success = None
         self._battery = None
@@ -87,8 +85,8 @@ class SwitchBotCurtain(CoverEntity, RestoreEntity):
         _LOGGER.info("Switchbot state %s", state)
         self._state = state.state
 
-        if "current_position" in state.attributes:
-            self._pos = state.attributes["current_position"]
+        if ATTR_CURRENT_POSITION in state.attributes:
+            self._pos = state.attributes[ATTR_CURRENT_POSITION]
 
     @property
     def assumed_state(self) -> bool:
@@ -129,43 +127,53 @@ class SwitchBotCurtain(CoverEntity, RestoreEntity):
         """Return if the cover is closed."""
         return self._pos <= 10
 
-    def open_cover(self, **kwargs) -> None:
+    async def async_open_cover(self, **kwargs) -> None:
         """Open the curtain with using this device."""
 
         _LOGGER.info("Switchbot to open curtain %s", self._mac)
 
-        if self._device.open():
+        update_ok = await self.hass.async_add_executor_job(self._device.open)
+
+        if update_ok:
             self._last_run_success = True
         else:
             self._last_run_success = False
 
-    def close_cover(self, **kwargs) -> None:
+    async def async_close_cover(self, **kwargs) -> None:
         """Close the curtain with using this device."""
 
         _LOGGER.info("Switchbot to close the curtain %s", self._mac)
 
-        if self._device.close():
+        update_ok = await self.hass.async_add_executor_job(self._device.close)
+
+        if update_ok:
             self._last_run_success = True
         else:
             self._last_run_success = False
 
-    def stop_cover(self, **kwargs) -> None:
+    async def async_stop_cover(self, **kwargs) -> None:
         """Stop the moving of this device."""
 
         _LOGGER.info("Switchbot to stop %s", self._mac)
 
-        if self._device.stop():
+        update_ok = await self.hass.async_add_executor_job(self._device.stop)
+
+        if update_ok:
             self._last_run_success = True
         else:
             self._last_run_success = False
 
-    def set_cover_position(self, **kwargs):
+    async def async_set_cover_position(self, **kwargs):
         """Move the cover shutter to a specific position."""
         position = kwargs.get(ATTR_POSITION)
 
         _LOGGER.info("Switchbot to move at %d %s", position, self._mac)
 
-        if self._device.set_position(position):
+        update_ok = await self.hass.async_add_executor_job(
+            self._device.set_position, position
+        )
+
+        if update_ok:
             self._last_run_success = True
         else:
             self._last_run_success = False
@@ -185,14 +193,15 @@ class SwitchBotCurtain(CoverEntity, RestoreEntity):
             "manufacturer": MANUFACTURER,
         }
 
-    def update(self):
+    async def async_update(self):
         """Update device attributes."""
-        try:
-            with CONNECT_LOCK:
-                self._device.update()
-                self._light = self._device.get_light_level()
-                self._battery = self._device.get_battery_percent()
-                self._pos = self._device.get_position()
+        async with CONNECT_LOCK:
+            await self.hass.async_add_executor_job(self._device.update)
 
-        except BTLEInternalError as err:
-            raise BTLEInternalError(err) from err
+        self._light = await self.hass.async_add_executor_job(
+            self._device.get_light_level
+        )
+        self._battery = await self.hass.async_add_executor_job(
+            self._device.get_battery_percent
+        )
+        self._pos = await self.hass.async_add_executor_job(self._device.get_position)
