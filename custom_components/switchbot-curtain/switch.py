@@ -1,6 +1,8 @@
 """Support for Switchbot bot."""
 from __future__ import annotations
 
+import asyncio
+from datetime import timedelta
 from typing import Any
 
 # pylint: disable=import-error
@@ -27,6 +29,10 @@ from .const import (
     MANUFACTURER,
 )
 
+CONNECT_LOCK = asyncio.Lock()
+SCAN_INTERVAL = timedelta(seconds=35)
+PARALLEL_UPDATES = 1
+
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
         vol.Required(CONF_MAC): cv.string,
@@ -36,7 +42,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
 )
 
 
-def setup_platform(hass, config, async_add_entities, discovery_info=None):
+async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
     """Import yaml config and initiates config flow for Switchbot devices."""
 
     # Check if entry config exists and skips import if it does.
@@ -89,6 +95,8 @@ class SwitchBot(SwitchEntity, RestoreEntity):
         self._state = None
         self._last_run_success = None
         self._name = name
+        self._battery = None
+        self._mode = None
         self._mac = mac
         self._device = switchbot.Switchbot(mac=mac, password=password)
         self._device_class = DEVICE_CLASS_SWITCH
@@ -99,20 +107,31 @@ class SwitchBot(SwitchEntity, RestoreEntity):
         state = await self.async_get_last_state()
         if not state:
             return
-        self._state = state.state == "on"
+        self._state = state.state
 
-    def turn_on(self, **kwargs) -> None:
+    async def async_turn_on(self, **kwargs) -> None:
         """Turn device on."""
-        if self._device.turn_on():
-            self._state = True
+        update_ok = await self.hass.async_add_executor_job(self._device.turn_on)
+
+        if update_ok:
             self._last_run_success = True
         else:
             self._last_run_success = False
 
-    def turn_off(self, **kwargs) -> None:
+    async def async_turn_off(self, **kwargs) -> None:
         """Turn device off."""
-        if self._device.turn_off():
-            self._state = False
+        update_ok = await self.hass.async_add_executor_job(self._device.turn_off)
+
+        if update_ok:
+            self._last_run_success = True
+        else:
+            self._last_run_success = False
+
+    async def async_toggle(self, **kwargs) -> None:
+        """Toggle for switchbot in toggle mode."""
+        update_ok = await self.hass.async_add_executor_job(self._device.press)
+
+        if update_ok:
             self._last_run_success = True
         else:
             self._last_run_success = False
@@ -138,9 +157,13 @@ class SwitchBot(SwitchEntity, RestoreEntity):
         return self._name
 
     @property
-    def extra_state_attributes(self) -> dict[str, Any]:
+    def device_state_attributes(self) -> dict[str, Any]:
         """Return the state attributes."""
-        return {"last_run_success": self._last_run_success}
+        return {
+            "last_run_success": self._last_run_success,
+            "battery": self._battery,
+            "mode": self._mode,
+        }
 
     @property
     def device_info(self):
@@ -151,6 +174,17 @@ class SwitchBot(SwitchEntity, RestoreEntity):
             "model": "Bot",
             "manufacturer": MANUFACTURER,
         }
+
+    async def async_update(self):
+        """Update device attributes."""
+        async with CONNECT_LOCK:
+            await self.hass.async_add_executor_job(self._device.update)
+
+        self._state = await self.hass.async_add_executor_job(self._device.is_on)
+        self._battery = await self.hass.async_add_executor_job(
+            self._device.get_battery_percent
+        )
+        self._mode = await self.hass.async_add_executor_job(self._device.switch_mode)
 
     @property
     def device_class(self):
