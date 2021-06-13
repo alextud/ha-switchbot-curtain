@@ -1,8 +1,8 @@
 """Provides the switchbot DataUpdateCoordinator."""
+import asyncio
 from datetime import timedelta
 import logging
 
-from async_timeout import timeout
 from bluepy.btle import BTLEManagementError
 from switchbot import SwitchbotDevices
 
@@ -10,6 +10,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import DOMAIN
+
+CONNECT_LOCK = asyncio.Lock()
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -34,7 +36,7 @@ class SwitchbotDataUpdateCoordinator(DataUpdateCoordinator):
     async def _async_update_data(self):
         """Fetch data from switchbot."""
         try:
-            async with timeout(35):
+            async with CONNECT_LOCK:
                 return await self.hass.async_add_executor_job(self._update_data)
 
         except BTLEManagementError as error:
