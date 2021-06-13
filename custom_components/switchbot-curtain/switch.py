@@ -1,8 +1,6 @@
 """Support for Switchbot bot."""
 from __future__ import annotations
 
-import asyncio
-from datetime import timedelta
 from typing import Any
 
 # pylint: disable=import-error
@@ -17,21 +15,18 @@ from homeassistant.components.switch import (
 from homeassistant.config_entries import SOURCE_IMPORT
 from homeassistant.const import CONF_MAC, CONF_NAME, CONF_PASSWORD, CONF_SENSOR_TYPE
 import homeassistant.helpers.config_validation as cv
-from homeassistant.helpers.restore_state import RestoreEntity
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
     ATTR_BOT,
     CONF_RETRY_COUNT,
     CONF_RETRY_TIMEOUT,
     CONF_TIME_BETWEEN_UPDATE_COMMAND,
+    DATA_COORDINATOR,
     DEFAULT_NAME,
     DOMAIN,
     MANUFACTURER,
 )
-
-CONNECT_LOCK = asyncio.Lock()
-SCAN_INTERVAL = timedelta(seconds=35)
-PARALLEL_UPDATES = 1
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
@@ -65,8 +60,9 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up Switchbot based on a config entry."""
+    coordinator = hass.data[DOMAIN][DATA_COORDINATOR]
 
-    device = []
+    bot_device = []
 
     switchbot.DEFAULT_RETRY_COUNT = entry.options[CONF_RETRY_COUNT]
     switchbot.DEFAULT_RETRY_TIMEOUT = entry.options[CONF_RETRY_TIMEOUT]
@@ -75,39 +71,38 @@ async def async_setup_entry(hass, entry, async_add_entities):
     ]
 
     if entry.data[CONF_SENSOR_TYPE] == ATTR_BOT:
-        device.append(
-            SwitchBot(
-                entry.data[CONF_MAC],
-                entry.data[CONF_NAME],
-                entry.data.get(CONF_PASSWORD, None),
-            )
-        )
+        for idx in coordinator.data:
+            if idx == entry.unique_id:
 
-    async_add_entities(device)
+                bot_device.append(
+                    SwitchBot(
+                        coordinator,
+                        idx,
+                        entry.data[CONF_MAC],
+                        entry.data[CONF_NAME],
+                        entry.data.get(CONF_PASSWORD, None),
+                    )
+                )
+
+    async_add_entities(bot_device)
 
 
-class SwitchBot(SwitchEntity, RestoreEntity):
+class SwitchBot(CoordinatorEntity, SwitchEntity):
     """Representation of a Switchbot."""
 
-    def __init__(self, mac, name, password=None) -> None:
+    def __init__(self, coordinator, idx, mac, name, password=None) -> None:
         """Initialize the Switchbot."""
-
-        self._state = None
+        super().__init__(coordinator)
+        SwitchEntity.__init__(self)
+        self._idx = idx
+        self._state = self.coordinator.data[self._idx]["serviceData"]["isOn"]
         self._last_run_success = None
+        self._model = self.coordinator.data[self._idx]["serviceData"]["modelName"]
         self._name = name
-        self._battery = None
-        self._mode = None
+        self._mode = self.coordinator.data[self._idx]["serviceData"]["switchMode"]
         self._mac = mac
         self._device = switchbot.Switchbot(mac=mac, password=password)
         self._device_class = DEVICE_CLASS_SWITCH
-
-    async def async_added_to_hass(self):
-        """Run when entity about to be added."""
-        await super().async_added_to_hass()
-        state = await self.async_get_last_state()
-        if not state:
-            return
-        self._state = state.state
 
     async def async_turn_on(self, **kwargs) -> None:
         """Turn device on."""
@@ -127,19 +122,11 @@ class SwitchBot(SwitchEntity, RestoreEntity):
         else:
             self._last_run_success = False
 
-    async def async_toggle(self, **kwargs) -> None:
-        """Toggle for switchbot in toggle mode."""
-        update_ok = await self.hass.async_add_executor_job(self._device.press)
-
-        if update_ok:
-            self._last_run_success = True
-        else:
-            self._last_run_success = False
-
     @property
     def assumed_state(self) -> bool:
         """Return true if unable to access real state of entity."""
-        return True
+        if not self._mode:
+            return True
 
     @property
     def is_on(self) -> bool:
@@ -161,8 +148,7 @@ class SwitchBot(SwitchEntity, RestoreEntity):
         """Return the state attributes."""
         return {
             "last_run_success": self._last_run_success,
-            "battery": self._battery,
-            "mode": self._mode,
+            "switch_mode": self._mode,
         }
 
     @property
@@ -171,20 +157,9 @@ class SwitchBot(SwitchEntity, RestoreEntity):
         return {
             "identifiers": {(DOMAIN, self._mac.replace(":", ""))},
             "name": self._name,
-            "model": "Bot",
+            "model": self._model,
             "manufacturer": MANUFACTURER,
         }
-
-    async def async_update(self):
-        """Update device attributes."""
-        async with CONNECT_LOCK:
-            await self.hass.async_add_executor_job(self._device.update)
-
-        self._state = await self.hass.async_add_executor_job(self._device.is_on)
-        self._battery = await self.hass.async_add_executor_job(
-            self._device.get_battery_percent
-        )
-        self._mode = await self.hass.async_add_executor_job(self._device.switch_mode)
 
     @property
     def device_class(self):

@@ -1,8 +1,6 @@
 """Support for SwitchBot curtains."""
 from __future__ import annotations
 
-import asyncio
-from datetime import timedelta
 import logging
 from typing import Any
 
@@ -10,7 +8,6 @@ from typing import Any
 import switchbot
 
 from homeassistant.components.cover import (
-    ATTR_CURRENT_POSITION,
     ATTR_POSITION,
     DEVICE_CLASS_CURTAIN,
     SUPPORT_CLOSE,
@@ -21,19 +18,17 @@ from homeassistant.components.cover import (
 )
 from homeassistant.const import CONF_MAC, CONF_NAME, CONF_PASSWORD, CONF_SENSOR_TYPE
 from homeassistant.helpers.restore_state import RestoreEntity
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
     ATTR_CURTAIN,
     CONF_RETRY_COUNT,
     CONF_RETRY_TIMEOUT,
     CONF_TIME_BETWEEN_UPDATE_COMMAND,
+    DATA_COORDINATOR,
     DOMAIN,
     MANUFACTURER,
 )
-
-CONNECT_LOCK = asyncio.Lock()
-SCAN_INTERVAL = timedelta(seconds=35)
-PARALLEL_UPDATES = 1
 
 # Initialize the logger
 _LOGGER = logging.getLogger(__name__)
@@ -41,8 +36,9 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up Switchbot curtain based on a config entry."""
+    coordinator = hass.data[DOMAIN][DATA_COORDINATOR]
 
-    device = []
+    curtain_device = []
 
     switchbot.DEFAULT_RETRY_COUNT = entry.options[CONF_RETRY_COUNT]
     switchbot.DEFAULT_RETRY_TIMEOUT = entry.options[CONF_RETRY_TIMEOUT]
@@ -51,42 +47,36 @@ async def async_setup_entry(hass, entry, async_add_entities):
     ]
 
     if entry.data[CONF_SENSOR_TYPE] == ATTR_CURTAIN:
-        device.append(
-            SwitchBotCurtain(
-                entry.data[CONF_MAC],
-                entry.data[CONF_NAME],
-                entry.data.get(CONF_PASSWORD, None),
-            )
-        )
+        for idx in coordinator.data:
+            if idx == entry.unique_id:
 
-    async_add_entities(device)
+                curtain_device.append(
+                    SwitchBotCurtain(
+                        coordinator,
+                        idx,
+                        entry.data[CONF_MAC],
+                        entry.data[CONF_NAME],
+                        entry.data.get(CONF_PASSWORD, None),
+                    )
+                )
+
+    async_add_entities(curtain_device)
 
 
-class SwitchBotCurtain(CoverEntity, RestoreEntity):
+class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
     """Representation of a Switchbot."""
 
-    def __init__(self, mac, name, password=None) -> None:
+    def __init__(self, coordinator, idx, mac, name, password=None) -> None:
         """Initialize the Switchbot."""
-        self._state = None
+        super().__init__(coordinator)
+        CoverEntity.__init__(self)
         self._last_run_success = None
-        self._battery = None
-        self._light = None
+        self._idx = idx
         self._name = name
         self._mac = mac
+        self._model = self.coordinator.data[self._idx]["serviceData"]["modelName"]
         self._device = switchbot.SwitchbotCurtain(mac=mac, password=password)
-        self._pos = 0
-
-    async def async_added_to_hass(self):
-        """Run when entity about to be added."""
-        await super().async_added_to_hass()
-        state = await self.async_get_last_state()
-        if not state:
-            return
-        _LOGGER.info("Switchbot state %s", state)
-        self._state = state.state
-
-        if ATTR_CURRENT_POSITION in state.attributes:
-            self._pos = state.attributes[ATTR_CURRENT_POSITION]
+        self._pos = self.coordinator.data[self._idx]["serviceData"]["position"]
 
     @property
     def assumed_state(self) -> bool:
@@ -108,8 +98,6 @@ class SwitchBotCurtain(CoverEntity, RestoreEntity):
         """Return the state attributes."""
         return {
             "last_run_success": self._last_run_success,
-            "battery": self._battery,
-            "light": self._light,
         }
 
     @property
@@ -189,19 +177,6 @@ class SwitchBotCurtain(CoverEntity, RestoreEntity):
         return {
             "identifiers": {(DOMAIN, self._mac.replace(":", ""))},
             "name": self._name,
-            "model": "Curtain",
+            "model": self._model,
             "manufacturer": MANUFACTURER,
         }
-
-    async def async_update(self):
-        """Update device attributes."""
-        async with CONNECT_LOCK:
-            await self.hass.async_add_executor_job(self._device.update)
-
-        self._light = await self.hass.async_add_executor_job(
-            self._device.get_light_level
-        )
-        self._battery = await self.hass.async_add_executor_job(
-            self._device.get_battery_percent
-        )
-        self._pos = await self.hass.async_add_executor_job(self._device.get_position)

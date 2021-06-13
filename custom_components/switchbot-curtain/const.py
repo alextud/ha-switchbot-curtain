@@ -14,3 +14,7 @@ DEFAULT_TIME_BETWEEN_UPDATE_COMMAND = 1
 CONF_TIME_BETWEEN_UPDATE_COMMAND = "update_time"
 CONF_RETRY_COUNT = "retry_count"
 CONF_RETRY_TIMEOUT = "retry_timeout"
+
+# Data
+DATA_COORDINATOR = "coordinator"
+DATA_UNDO_UPDATE_LISTENER = "undo_update_listener"
