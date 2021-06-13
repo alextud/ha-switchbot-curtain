@@ -35,6 +35,9 @@ async def async_setup_entry(hass, entry):
         }
         hass.config_entries.async_update_entry(entry, options=options)
 
+    if hass.data.get(DOMAIN):
+        return True
+
     switchbot_bots = SwitchbotDevices()
 
     coordinator = SwitchbotDataUpdateCoordinator(hass, api=switchbot_bots)
