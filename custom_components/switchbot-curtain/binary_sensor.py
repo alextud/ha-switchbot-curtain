@@ -20,7 +20,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
     binary_sensors = []
 
     for idx in coordinator.data:
-        if idx == entry.unique_id:
+        if idx == entry.unique_id.lower():
 
             if coordinator.data[idx].get("serviceData"):
                 for items in coordinator.data[idx].get("serviceData"):

@@ -72,7 +72,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
     if entry.data[CONF_SENSOR_TYPE] == ATTR_BOT:
         for idx in coordinator.data:
-            if idx == entry.unique_id:
+            if idx == entry.unique_id.lower():
 
                 bot_device.append(
                     SwitchBot(

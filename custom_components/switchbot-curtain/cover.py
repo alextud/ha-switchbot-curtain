@@ -48,7 +48,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
     if entry.data[CONF_SENSOR_TYPE] == ATTR_CURTAIN:
         for idx in coordinator.data:
-            if idx == entry.unique_id:
+            if idx == entry.unique_id.lower():
 
                 curtain_device.append(
                     SwitchBotCurtain(
