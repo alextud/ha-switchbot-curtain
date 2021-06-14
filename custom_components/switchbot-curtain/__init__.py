@@ -38,14 +38,14 @@ async def async_setup_entry(hass, entry):
     switchbot_bots = SwitchbotDevices()
 
     coordinator = SwitchbotDataUpdateCoordinator(hass, api=switchbot_bots)
-    await coordinator.async_refresh()
+    await coordinator.async_config_entry_first_refresh()
 
     if not coordinator.last_update_success:
         raise ConfigEntryNotReady
 
     undo_listener = entry.add_update_listener(_async_update_listener)
 
-    hass.data[DOMAIN] = {
+    hass.data[DOMAIN][entry.entry_id] = {
         DATA_COORDINATOR: coordinator,
         DATA_UNDO_UPDATE_LISTENER: undo_listener,
     }
@@ -59,9 +59,8 @@ async def async_unload_entry(hass, entry):
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
     if unload_ok:
-        hass.data[DOMAIN][DATA_UNDO_UPDATE_LISTENER]()
-        hass.data[DOMAIN].pop(DATA_COORDINATOR)
-        hass.data[DOMAIN].pop(DATA_UNDO_UPDATE_LISTENER)
+        hass.data[DOMAIN][entry.entry_id][DATA_UNDO_UPDATE_LISTENER]()
+        hass.data[DOMAIN].pop(entry.entry_id)
 
     return unload_ok
 
