@@ -3,7 +3,7 @@ import asyncio
 from datetime import timedelta
 import logging
 
-from bluepy.btle import BTLEManagementError
+from bluepy.btle import BTLEDisconnectError, BTLEManagementError
 from switchbot import SwitchbotDevices
 
 from homeassistant.core import HomeAssistant
@@ -39,5 +39,5 @@ class SwitchbotDataUpdateCoordinator(DataUpdateCoordinator):
             async with CONNECT_LOCK:
                 return await self.hass.async_add_executor_job(self._update_data)
 
-        except BTLEManagementError as error:
+        except (BTLEManagementError, BTLEDisconnectError) as error:
             raise UpdateFailed(f"Invalid response from API: {error}") from error

@@ -93,13 +93,10 @@ class SwitchBot(CoordinatorEntity, SwitchEntity):
     def __init__(self, coordinator, idx, mac, name, password=None) -> None:
         """Initialize the Switchbot."""
         super().__init__(coordinator)
-        SwitchEntity.__init__(self)
         self._idx = idx
-        self._state = self.coordinator.data[self._idx]["serviceData"]["isOn"]
         self._last_run_success = None
         self._model = self.coordinator.data[self._idx]["serviceData"]["modelName"]
         self._name = name
-        self._mode = self.coordinator.data[self._idx]["serviceData"]["switchMode"]
         self._mac = mac
         self._device = switchbot.Switchbot(mac=mac, password=password)
         self._device_class = DEVICE_CLASS_SWITCH
@@ -125,13 +122,13 @@ class SwitchBot(CoordinatorEntity, SwitchEntity):
     @property
     def assumed_state(self) -> bool:
         """Return true if unable to access real state of entity."""
-        if not self._mode:
+        if not self.coordinator.data[self._idx]["serviceData"]["switchMode"]:
             return True
 
     @property
     def is_on(self) -> bool:
         """Return true if device is on."""
-        return self._state
+        return self.coordinator.data[self._idx]["serviceData"]["isOn"]
 
     @property
     def unique_id(self) -> str:
@@ -148,7 +145,9 @@ class SwitchBot(CoordinatorEntity, SwitchEntity):
         """Return the state attributes."""
         return {
             "last_run_success": self._last_run_success,
-            "switch_mode": self._mode,
+            "switch_mode": self.coordinator.data[self._idx]["serviceData"][
+                "switchMode"
+            ],
         }
 
     @property

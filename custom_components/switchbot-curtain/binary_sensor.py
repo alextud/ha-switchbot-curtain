@@ -47,7 +47,7 @@ class SwitchBotBinarySensor(CoordinatorEntity, BinarySensorEntity):
         self._name = name
         self._mac = mac
         self._sensor_type = sensor_type
-        self._sensor_name = f"{self._name}_calibration"
+        self._sensor_name = f"{self._name}-calibration"
         self._model = self.coordinator.data[self._idx]["serviceData"]["modelName"]
 
     @property

@@ -69,14 +69,12 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
     def __init__(self, coordinator, idx, mac, name, password=None) -> None:
         """Initialize the Switchbot."""
         super().__init__(coordinator)
-        CoverEntity.__init__(self)
         self._last_run_success = None
         self._idx = idx
         self._name = name
         self._mac = mac
         self._model = self.coordinator.data[self._idx]["serviceData"]["modelName"]
         self._device = switchbot.SwitchbotCurtain(mac=mac, password=password)
-        self._pos = self.coordinator.data[self._idx]["serviceData"]["position"]
 
     @property
     def assumed_state(self) -> bool:
@@ -113,7 +111,7 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
     @property
     def is_closed(self):
         """Return if the cover is closed."""
-        return self._pos <= 10
+        return self.coordinator.data[self._idx]["serviceData"]["position"] <= 10
 
     async def async_open_cover(self, **kwargs) -> None:
         """Open the curtain with using this device."""
@@ -169,7 +167,7 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
     @property
     def current_cover_position(self):
         """Return the current position of cover shutter."""
-        return self._pos
+        return self.coordinator.data[self._idx]["serviceData"]["position"]
 
     @property
     def device_info(self):

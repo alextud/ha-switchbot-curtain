@@ -69,7 +69,7 @@ class SwitchBotSensor(CoordinatorEntity, Entity):
         self._name = name
         self._mac = mac
         self._sensor_type = sensor_type
-        self._sensor_name = f"{self._name}_{self._sensor_type}"
+        self._sensor_name = f"{self._name}-{self._sensor_type}"
         self._model = self.coordinator.data[self._idx]["serviceData"]["modelName"]
 
     @property
