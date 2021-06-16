@@ -4,7 +4,7 @@ from datetime import timedelta
 import logging
 
 from bluepy.btle import BTLEDisconnectError, BTLEManagementError
-import switchbot
+from switchbot import GetSwitchbotDevices
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -24,7 +24,7 @@ class SwitchbotDataUpdateCoordinator(DataUpdateCoordinator):
         hass: HomeAssistant,
         *,
         update_interval: int,
-        api: switchbot.SwitchbotDevice,
+        api: GetSwitchbotDevices,
     ) -> None:
         """Initialize global switchbot data updater."""
         self.switchbot_device = api
@@ -34,7 +34,7 @@ class SwitchbotDataUpdateCoordinator(DataUpdateCoordinator):
             hass, _LOGGER, name=DOMAIN, update_interval=self.update_interval
         )
 
-    def _update_data(self) -> switchbot.SwitchbotDevice:
+    def _update_data(self) -> GetSwitchbotDevices:
         """Fetch data from Switchbot via Switchbots Class."""
 
         switchbot_devices = self.switchbot_device.discover()
