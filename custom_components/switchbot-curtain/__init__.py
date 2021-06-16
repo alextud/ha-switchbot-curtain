@@ -1,5 +1,5 @@
 """Support for Switchbot devices."""
-from switchbot import SwitchbotDevices
+from switchbot import SwitchbotDevice
 
 from homeassistant.exceptions import ConfigEntryNotReady
 
@@ -35,9 +35,13 @@ async def async_setup_entry(hass, entry):
         }
         hass.config_entries.async_update_entry(entry, options=options)
 
-    switchbot_bots = SwitchbotDevices()
+    switchbot = SwitchbotDevice()
 
-    coordinator = SwitchbotDataUpdateCoordinator(hass, api=switchbot_bots)
+    coordinator = SwitchbotDataUpdateCoordinator(
+        hass,
+        update_interval=entry.options[CONF_TIME_BETWEEN_UPDATE_COMMAND],
+        api=switchbot,
+    )
     await coordinator.async_config_entry_first_refresh()
 
     if not coordinator.last_update_success:

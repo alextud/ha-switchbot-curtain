@@ -24,7 +24,6 @@ from .const import (
     ATTR_CURTAIN,
     CONF_RETRY_COUNT,
     CONF_RETRY_TIMEOUT,
-    CONF_TIME_BETWEEN_UPDATE_COMMAND,
     DATA_COORDINATOR,
     DOMAIN,
     MANUFACTURER,
@@ -42,9 +41,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
     switchbot.DEFAULT_RETRY_COUNT = entry.options[CONF_RETRY_COUNT]
     switchbot.DEFAULT_RETRY_TIMEOUT = entry.options[CONF_RETRY_TIMEOUT]
-    switchbot.DEFAULT_TIME_BETWEEN_UPDATE_COMMAND = entry.options[
-        CONF_TIME_BETWEEN_UPDATE_COMMAND
-    ]
 
     if entry.data[CONF_SENSOR_TYPE] == ATTR_CURTAIN:
         for idx in coordinator.data:
@@ -71,9 +67,9 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
         super().__init__(coordinator)
         self._last_run_success = None
         self._idx = idx
-        self._name = name
+        self.switchbot_name = name
         self._mac = mac
-        self._model = self.coordinator.data[self._idx]["serviceData"]["modelName"]
+        self._model = self.coordinator.data[self._idx]["modelName"]
         self._device = switchbot.SwitchbotCurtain(mac=mac, password=password)
 
     @property
@@ -89,7 +85,7 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
     @property
     def name(self) -> str:
         """Return the name of the switch."""
-        return self._name
+        return self.switchbot_name
 
     @property
     def device_state_attributes(self) -> dict[str, Any]:
@@ -111,7 +107,7 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
     @property
     def is_closed(self):
         """Return if the cover is closed."""
-        return self.coordinator.data[self._idx]["serviceData"]["position"] <= 10
+        return self.coordinator.data[self._idx]["data"]["position"] <= 10
 
     async def async_open_cover(self, **kwargs) -> None:
         """Open the curtain with using this device."""
@@ -167,14 +163,14 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
     @property
     def current_cover_position(self):
         """Return the current position of cover shutter."""
-        return self.coordinator.data[self._idx]["serviceData"]["position"]
+        return self.coordinator.data[self._idx]["data"]["position"]
 
     @property
     def device_info(self):
         """Return the device_info of the device."""
         return {
             "identifiers": {(DOMAIN, self._mac.replace(":", ""))},
-            "name": self._name,
+            "name": self.switchbot_name,
             "model": self._model,
             "manufacturer": MANUFACTURER,
         }

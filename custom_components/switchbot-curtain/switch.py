@@ -21,7 +21,6 @@ from .const import (
     ATTR_BOT,
     CONF_RETRY_COUNT,
     CONF_RETRY_TIMEOUT,
-    CONF_TIME_BETWEEN_UPDATE_COMMAND,
     DATA_COORDINATOR,
     DEFAULT_NAME,
     DOMAIN,
@@ -66,9 +65,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
     switchbot.DEFAULT_RETRY_COUNT = entry.options[CONF_RETRY_COUNT]
     switchbot.DEFAULT_RETRY_TIMEOUT = entry.options[CONF_RETRY_TIMEOUT]
-    switchbot.DEFAULT_TIME_BETWEEN_UPDATE_COMMAND = entry.options[
-        CONF_TIME_BETWEEN_UPDATE_COMMAND
-    ]
 
     if entry.data[CONF_SENSOR_TYPE] == ATTR_BOT:
         for idx in coordinator.data:
@@ -95,8 +91,8 @@ class SwitchBot(CoordinatorEntity, SwitchEntity):
         super().__init__(coordinator)
         self._idx = idx
         self._last_run_success = None
-        self._model = self.coordinator.data[self._idx]["serviceData"]["modelName"]
-        self._name = name
+        self._model = self.coordinator.data[self._idx]["modelName"]
+        self.switchbot_name = name
         self._mac = mac
         self._device = switchbot.Switchbot(mac=mac, password=password)
         self._device_class = DEVICE_CLASS_SWITCH
@@ -122,13 +118,13 @@ class SwitchBot(CoordinatorEntity, SwitchEntity):
     @property
     def assumed_state(self) -> bool:
         """Return true if unable to access real state of entity."""
-        if not self.coordinator.data[self._idx]["serviceData"]["switchMode"]:
+        if not self.coordinator.data[self._idx]["data"]["switchMode"]:
             return True
 
     @property
     def is_on(self) -> bool:
         """Return true if device is on."""
-        return self.coordinator.data[self._idx]["serviceData"]["isOn"]
+        return self.coordinator.data[self._idx]["data"]["isOn"]
 
     @property
     def unique_id(self) -> str:
@@ -138,16 +134,14 @@ class SwitchBot(CoordinatorEntity, SwitchEntity):
     @property
     def name(self) -> str:
         """Return the name of the switch."""
-        return self._name
+        return self.switchbot_name
 
     @property
     def device_state_attributes(self) -> dict[str, Any]:
         """Return the state attributes."""
         return {
             "last_run_success": self._last_run_success,
-            "switch_mode": self.coordinator.data[self._idx]["serviceData"][
-                "switchMode"
-            ],
+            "switch_mode": self.coordinator.data[self._idx]["data"]["switchMode"],
         }
 
     @property
@@ -155,7 +149,7 @@ class SwitchBot(CoordinatorEntity, SwitchEntity):
         """Return the device_info of the device."""
         return {
             "identifiers": {(DOMAIN, self._mac.replace(":", ""))},
-            "name": self._name,
+            "name": self.switchbot_name,
             "model": self._model,
             "manufacturer": MANUFACTURER,
         }
