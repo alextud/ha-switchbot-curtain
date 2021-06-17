@@ -1,9 +1,12 @@
 """Support for Switchbot devices."""
-from switchbot import GetSwitchbotDevices
+from switchbot import GetSwitchbotDevices, Switchbot, SwitchbotCurtain
 
+from homeassistant.const import CONF_MAC, CONF_PASSWORD, CONF_SENSOR_TYPE
 from homeassistant.exceptions import ConfigEntryNotReady
 
 from .const import (
+    ATTR_BOT,
+    ATTR_CURTAIN,
     CONF_RETRY_COUNT,
     CONF_RETRY_TIMEOUT,
     CONF_TIME_BETWEEN_UPDATE_COMMAND,
@@ -22,6 +25,7 @@ PLATFORMS = ["sensor", "binary_sensor", "switch", "cover"]
 async def async_setup_entry(hass, entry):
     """Set up Switchbot from a config entry."""
     hass.data.setdefault(DOMAIN, {})
+    switchbot_control = None
 
     if not entry.options:
         options = {
@@ -37,11 +41,23 @@ async def async_setup_entry(hass, entry):
 
     switchbot = GetSwitchbotDevices()
 
+    if entry.data[CONF_SENSOR_TYPE] == ATTR_BOT:
+        mac = entry.data[CONF_MAC]
+        passw = entry.data.get(CONF_PASSWORD, None)
+        switchbot_control = Switchbot(mac=mac, password=passw)
+
+    if entry.data[CONF_SENSOR_TYPE] == ATTR_CURTAIN:
+        mac = entry.data[CONF_MAC]
+        passw = entry.data.get(CONF_PASSWORD, None)
+        switchbot_control = SwitchbotCurtain(mac=mac, password=passw)
+
     coordinator = SwitchbotDataUpdateCoordinator(
         hass,
         update_interval=entry.options[CONF_TIME_BETWEEN_UPDATE_COMMAND],
         api=switchbot,
+        api_control=switchbot_control,
     )
+
     await coordinator.async_config_entry_first_refresh()
 
     if not coordinator.last_update_success:

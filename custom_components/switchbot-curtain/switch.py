@@ -3,8 +3,6 @@ from __future__ import annotations
 
 from typing import Any
 
-# pylint: disable=import-error
-import switchbot
 import voluptuous as vol
 
 from homeassistant.components.switch import (
@@ -17,15 +15,7 @@ from homeassistant.const import CONF_MAC, CONF_NAME, CONF_PASSWORD, CONF_SENSOR_
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import (
-    ATTR_BOT,
-    CONF_RETRY_COUNT,
-    CONF_RETRY_TIMEOUT,
-    DATA_COORDINATOR,
-    DEFAULT_NAME,
-    DOMAIN,
-    MANUFACTURER,
-)
+from .const import ATTR_BOT, DATA_COORDINATOR, DEFAULT_NAME, DOMAIN, MANUFACTURER
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
@@ -63,9 +53,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
     bot_device = []
 
-    switchbot.DEFAULT_RETRY_COUNT = entry.options[CONF_RETRY_COUNT]
-    switchbot.DEFAULT_RETRY_TIMEOUT = entry.options[CONF_RETRY_TIMEOUT]
-
     if entry.data[CONF_SENSOR_TYPE] == ATTR_BOT:
         for idx in coordinator.data:
             if idx == entry.unique_id.lower():
@@ -94,12 +81,13 @@ class SwitchBot(CoordinatorEntity, SwitchEntity):
         self._model = self.coordinator.data[self._idx]["modelName"]
         self.switchbot_name = name
         self._mac = mac
-        self._device = switchbot.Switchbot(mac=mac, password=password)
         self._device_class = DEVICE_CLASS_SWITCH
 
     async def async_turn_on(self, **kwargs) -> None:
         """Turn device on."""
-        update_ok = await self.hass.async_add_executor_job(self._device.turn_on)
+        update_ok = await self.hass.async_add_executor_job(
+            self.coordinator.switchbot_control.turn_on
+        )
 
         if update_ok:
             self._last_run_success = True
@@ -108,7 +96,9 @@ class SwitchBot(CoordinatorEntity, SwitchEntity):
 
     async def async_turn_off(self, **kwargs) -> None:
         """Turn device off."""
-        update_ok = await self.hass.async_add_executor_job(self._device.turn_off)
+        update_ok = await self.hass.async_add_executor_job(
+            self.coordinator.switchbot_control.turn_off
+        )
 
         if update_ok:
             self._last_run_success = True

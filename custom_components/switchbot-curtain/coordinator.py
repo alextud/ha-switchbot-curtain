@@ -3,11 +3,10 @@ import asyncio
 from datetime import timedelta
 import logging
 
-from bluepy.btle import BTLEDisconnectError, BTLEManagementError
 from switchbot import GetSwitchbotDevices
 
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import DOMAIN
 
@@ -25,9 +24,11 @@ class SwitchbotDataUpdateCoordinator(DataUpdateCoordinator):
         *,
         update_interval: int,
         api: GetSwitchbotDevices,
+        api_control,
     ) -> None:
         """Initialize global switchbot data updater."""
         self.switchbot_device = api
+        self.switchbot_control = api_control
         self.update_interval = timedelta(seconds=update_interval)
 
         super().__init__(
@@ -43,9 +44,6 @@ class SwitchbotDataUpdateCoordinator(DataUpdateCoordinator):
 
     async def _async_update_data(self):
         """Fetch data from switchbot."""
-        try:
-            async with CONNECT_LOCK:
-                return await self.hass.async_add_executor_job(self._update_data)
 
-        except (BTLEManagementError, BTLEDisconnectError) as error:
-            raise UpdateFailed(f"Invalid response from API: {error}") from error
+        async with CONNECT_LOCK:
+            return await self.hass.async_add_executor_job(self._update_data)

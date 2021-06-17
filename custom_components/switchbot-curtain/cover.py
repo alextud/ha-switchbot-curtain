@@ -4,9 +4,6 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-# pylint: disable=import-error
-import switchbot
-
 from homeassistant.components.cover import (
     ATTR_POSITION,
     DEVICE_CLASS_CURTAIN,
@@ -20,14 +17,7 @@ from homeassistant.const import CONF_MAC, CONF_NAME, CONF_PASSWORD, CONF_SENSOR_
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import (
-    ATTR_CURTAIN,
-    CONF_RETRY_COUNT,
-    CONF_RETRY_TIMEOUT,
-    DATA_COORDINATOR,
-    DOMAIN,
-    MANUFACTURER,
-)
+from .const import ATTR_CURTAIN, DATA_COORDINATOR, DOMAIN, MANUFACTURER
 
 # Initialize the logger
 _LOGGER = logging.getLogger(__name__)
@@ -38,9 +28,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
     coordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
 
     curtain_device = []
-
-    switchbot.DEFAULT_RETRY_COUNT = entry.options[CONF_RETRY_COUNT]
-    switchbot.DEFAULT_RETRY_TIMEOUT = entry.options[CONF_RETRY_TIMEOUT]
 
     if entry.data[CONF_SENSOR_TYPE] == ATTR_CURTAIN:
         for idx in coordinator.data:
@@ -70,7 +57,6 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
         self.switchbot_name = name
         self._mac = mac
         self._model = self.coordinator.data[self._idx]["modelName"]
-        self._device = switchbot.SwitchbotCurtain(mac=mac, password=password)
 
     @property
     def assumed_state(self) -> bool:
@@ -114,7 +100,9 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
 
         _LOGGER.info("Switchbot to open curtain %s", self._mac)
 
-        update_ok = await self.hass.async_add_executor_job(self._device.open)
+        update_ok = await self.hass.async_add_executor_job(
+            self.coordinator.switchbot_control.open
+        )
 
         if update_ok:
             self._last_run_success = True
@@ -126,7 +114,9 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
 
         _LOGGER.info("Switchbot to close the curtain %s", self._mac)
 
-        update_ok = await self.hass.async_add_executor_job(self._device.close)
+        update_ok = await self.hass.async_add_executor_job(
+            self.coordinator.switchbot_control.close
+        )
 
         if update_ok:
             self._last_run_success = True
@@ -138,7 +128,9 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
 
         _LOGGER.info("Switchbot to stop %s", self._mac)
 
-        update_ok = await self.hass.async_add_executor_job(self._device.stop)
+        update_ok = await self.hass.async_add_executor_job(
+            self.coordinator.switchbot_control.stop
+        )
 
         if update_ok:
             self._last_run_success = True
@@ -152,7 +144,7 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
         _LOGGER.info("Switchbot to move at %d %s", position, self._mac)
 
         update_ok = await self.hass.async_add_executor_job(
-            self._device.set_position, position
+            self.coordinator.switchbot_control.set_position, position
         )
 
         if update_ok:
