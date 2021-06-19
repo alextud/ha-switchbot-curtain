@@ -1,7 +1,7 @@
 """Constants for the switchbot integration."""
 from enum import Enum
 
-DOMAIN = "switchbot-curtain"
+DOMAIN = "switchbot"
 MANUFACTURER = "switchbot"
 
 ATTR_CURTAIN = "curtain"
@@ -27,7 +27,7 @@ class SensorType(Enum):
     """Sensors and their types to expose in HA."""
 
     # pylint: disable=invalid-name
-    lightLevel = ["None", "None"]
+    lightLevel = ["illuminance", "Level"]
     battery = ["battery", "%"]
     rssi = ["signal_strength", "dBm"]
 
