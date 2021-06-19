@@ -17,7 +17,7 @@ from homeassistant.const import CONF_MAC, CONF_NAME, CONF_PASSWORD, CONF_SENSOR_
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import ATTR_CURTAIN, CMD_HELPER, DATA_COORDINATOR, DOMAIN, MANUFACTURER
+from .const import ATTR_CURTAIN, DATA_COORDINATOR, DOMAIN, MANUFACTURER
 
 # Initialize the logger
 _LOGGER = logging.getLogger(__name__)
@@ -26,7 +26,6 @@ _LOGGER = logging.getLogger(__name__)
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up Switchbot curtain based on a config entry."""
     coordinator = hass.data[DOMAIN][DATA_COORDINATOR]
-    cmd_helper = hass.data[DOMAIN][CMD_HELPER].SwitchbotCurtain
 
     curtain_device = []
 
@@ -41,7 +40,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
                         entry.data[CONF_MAC],
                         entry.data[CONF_NAME],
                         entry.data.get(CONF_PASSWORD, None),
-                        cmd_helper,
                     )
                 )
 
@@ -51,7 +49,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
 class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
     """Representation of a Switchbot."""
 
-    def __init__(self, coordinator, idx, mac, name, password, cmd_helper) -> None:
+    def __init__(self, coordinator, idx, mac, name, password) -> None:
         """Initialize the Switchbot."""
         super().__init__(coordinator)
         self._last_run_success = None
@@ -59,7 +57,9 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
         self.switchbot_name = name
         self._mac = mac
         self._model = self.coordinator.data[self._idx]["modelName"]
-        self._device = cmd_helper(mac=mac, password=password)
+        self._device = self.coordinator.switchbot_api.SwitchbotCurtain(
+            mac=mac, password=password
+        )
 
     @property
     def assumed_state(self) -> bool:

@@ -15,14 +15,7 @@ from homeassistant.const import CONF_MAC, CONF_NAME, CONF_PASSWORD, CONF_SENSOR_
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import (
-    ATTR_BOT,
-    CMD_HELPER,
-    DATA_COORDINATOR,
-    DEFAULT_NAME,
-    DOMAIN,
-    MANUFACTURER,
-)
+from .const import ATTR_BOT, DATA_COORDINATOR, DEFAULT_NAME, DOMAIN, MANUFACTURER
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
@@ -57,7 +50,6 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up Switchbot based on a config entry."""
     coordinator = hass.data[DOMAIN][DATA_COORDINATOR]
-    cmd_helper = hass.data[DOMAIN][CMD_HELPER].Switchbot
 
     bot_device = []
 
@@ -72,7 +64,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
                         entry.data[CONF_MAC],
                         entry.data[CONF_NAME],
                         entry.data.get(CONF_PASSWORD, None),
-                        cmd_helper,
                     )
                 )
 
@@ -82,7 +73,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
 class SwitchBot(CoordinatorEntity, SwitchEntity):
     """Representation of a Switchbot."""
 
-    def __init__(self, coordinator, idx, mac, name, password, cmd_helper) -> None:
+    def __init__(self, coordinator, idx, mac, name, password) -> None:
         """Initialize the Switchbot."""
         super().__init__(coordinator)
         self._idx = idx
@@ -90,7 +81,9 @@ class SwitchBot(CoordinatorEntity, SwitchEntity):
         self._model = self.coordinator.data[self._idx]["modelName"]
         self.switchbot_name = name
         self._mac = mac
-        self._device = cmd_helper(mac=mac, password=password)
+        self._device = self.coordinator.switchbot_api.Switchbot(
+            mac=mac, password=password
+        )
         self._device_class = DEVICE_CLASS_SWITCH
 
     async def async_turn_on(self, **kwargs) -> None:

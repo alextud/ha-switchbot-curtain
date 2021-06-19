@@ -4,7 +4,6 @@ import switchbot
 from homeassistant.exceptions import ConfigEntryNotReady
 
 from .const import (
-    CMD_HELPER,
     CONF_RETRY_COUNT,
     CONF_RETRY_TIMEOUT,
     CONF_TIME_BETWEEN_UPDATE_COMMAND,
@@ -38,13 +37,12 @@ async def async_setup_entry(hass, entry):
 
     if not hass.data[DOMAIN].get(DATA_COORDINATOR):
 
-        switchbot_devices = switchbot.GetSwitchbotDevices()
-        cmd_api = switchbot
+        switchbot_api = switchbot
 
         coordinator = SwitchbotDataUpdateCoordinator(
             hass,
             update_interval=entry.options[CONF_TIME_BETWEEN_UPDATE_COMMAND],
-            api=switchbot_devices,
+            api=switchbot_api,
         )
 
         await coordinator.async_config_entry_first_refresh()
@@ -57,7 +55,6 @@ async def async_setup_entry(hass, entry):
         hass.data[DOMAIN] = {
             DATA_COORDINATOR: coordinator,
             DATA_UNDO_UPDATE_LISTENER: undo_listener,
-            CMD_HELPER: cmd_api,
         }
 
     hass.config_entries.async_setup_platforms(entry, PLATFORMS)

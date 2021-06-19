@@ -19,14 +19,10 @@ class SwitchbotDataUpdateCoordinator(DataUpdateCoordinator):
     """Class to manage fetching switchbot data."""
 
     def __init__(
-        self,
-        hass: HomeAssistant,
-        *,
-        update_interval: int,
-        api: switchbot.GetSwitchbotDevices,
+        self, hass: HomeAssistant, *, update_interval: int, api: switchbot
     ) -> None:
         """Initialize global switchbot data updater."""
-        self.switchbot_device = api
+        self.switchbot_api = api
         self.update_interval = timedelta(seconds=update_interval)
 
         super().__init__(
@@ -36,9 +32,9 @@ class SwitchbotDataUpdateCoordinator(DataUpdateCoordinator):
     def _update_data(self) -> switchbot.GetSwitchbotDevices:
         """Fetch data from Switchbot via Switchbots Class."""
 
-        switchbot_devices = self.switchbot_device.discover()
+        switchbot_api = self.switchbot_api.GetSwitchbotDevices().discover()
 
-        return switchbot_devices
+        return switchbot_api
 
     async def _async_update_data(self):
         """Fetch data from switchbot."""
