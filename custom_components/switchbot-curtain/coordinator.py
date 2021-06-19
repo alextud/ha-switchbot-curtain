@@ -39,7 +39,7 @@ class SwitchbotDataUpdateCoordinator(DataUpdateCoordinator):
         """Fetch data from Switchbot via Switchbots Class."""
 
         _switchbot_api = self.switchbot_api.GetSwitchbotDevices().discover(
-            retry_count=self.retry_count
+            retry=self.retry_count
         )
 
         return _switchbot_api
