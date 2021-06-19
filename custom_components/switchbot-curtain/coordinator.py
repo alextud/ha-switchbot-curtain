@@ -3,7 +3,7 @@ import asyncio
 from datetime import timedelta
 import logging
 
-from switchbot import GetSwitchbotDevices
+import switchbot
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
@@ -23,7 +23,7 @@ class SwitchbotDataUpdateCoordinator(DataUpdateCoordinator):
         hass: HomeAssistant,
         *,
         update_interval: int,
-        api: GetSwitchbotDevices,
+        api: switchbot.GetSwitchbotDevices,
     ) -> None:
         """Initialize global switchbot data updater."""
         self.switchbot_device = api
@@ -33,11 +33,12 @@ class SwitchbotDataUpdateCoordinator(DataUpdateCoordinator):
             hass, _LOGGER, name=DOMAIN, update_interval=self.update_interval
         )
 
-    def _update_data(self):
-        """get switchbot services data."""
-        switchbot_device = self.switchbot_device
+    def _update_data(self) -> switchbot.GetSwitchbotDevices:
+        """Fetch data from Switchbot via Switchbots Class."""
 
-        return switchbot_device
+        switchbot_devices = self.switchbot_device.discover()
+
+        return switchbot_devices
 
     async def _async_update_data(self):
         """Fetch data from switchbot."""
