@@ -6,7 +6,7 @@ import logging
 import switchbot
 
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import DOMAIN
 
@@ -19,10 +19,16 @@ class SwitchbotDataUpdateCoordinator(DataUpdateCoordinator):
     """Class to manage fetching switchbot data."""
 
     def __init__(
-        self, hass: HomeAssistant, *, update_interval: int, api: switchbot
+        self,
+        hass: HomeAssistant,
+        *,
+        update_interval: int,
+        api: switchbot,
+        retry_count: int,
     ) -> None:
         """Initialize global switchbot data updater."""
         self.switchbot_api = api
+        self.retry_count = retry_count
         self.update_interval = timedelta(seconds=update_interval)
 
         super().__init__(
@@ -32,12 +38,21 @@ class SwitchbotDataUpdateCoordinator(DataUpdateCoordinator):
     def _update_data(self) -> switchbot.GetSwitchbotDevices:
         """Fetch data from Switchbot via Switchbots Class."""
 
-        switchbot_api = self.switchbot_api.GetSwitchbotDevices().discover()
+        _switchbot_api = self.switchbot_api.GetSwitchbotDevices().discover(
+            retry_count=self.retry_count
+        )
 
-        return switchbot_api
+        return _switchbot_api
 
     async def _async_update_data(self):
         """Fetch data from switchbot."""
 
         async with CONNECT_LOCK:
-            return await self.hass.async_add_executor_job(self._update_data)
+            _get_switchbot_api = await self.hass.async_add_executor_job(
+                self._update_data
+            )
+
+        if not _get_switchbot_api:
+            raise UpdateFailed("Unable to fetch switchbot services data")
+
+        return _get_switchbot_api

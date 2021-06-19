@@ -15,7 +15,14 @@ from homeassistant.const import CONF_MAC, CONF_NAME, CONF_PASSWORD, CONF_SENSOR_
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import ATTR_BOT, DATA_COORDINATOR, DEFAULT_NAME, DOMAIN, MANUFACTURER
+from .const import (
+    ATTR_BOT,
+    CONF_RETRY_COUNT,
+    DATA_COORDINATOR,
+    DEFAULT_NAME,
+    DOMAIN,
+    MANUFACTURER,
+)
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
@@ -64,6 +71,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
                         entry.data[CONF_MAC],
                         entry.data[CONF_NAME],
                         entry.data.get(CONF_PASSWORD, None),
+                        entry.options[CONF_RETRY_COUNT],
                     )
                 )
 
@@ -73,7 +81,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
 class SwitchBot(CoordinatorEntity, SwitchEntity):
     """Representation of a Switchbot."""
 
-    def __init__(self, coordinator, idx, mac, name, password) -> None:
+    def __init__(self, coordinator, idx, mac, name, password, retry_count) -> None:
         """Initialize the Switchbot."""
         super().__init__(coordinator)
         self._idx = idx
@@ -82,7 +90,7 @@ class SwitchBot(CoordinatorEntity, SwitchEntity):
         self.switchbot_name = name
         self._mac = mac
         self._device = self.coordinator.switchbot_api.Switchbot(
-            mac=mac, password=password
+            mac=mac, password=password, retry_count=retry_count
         )
         self._device_class = DEVICE_CLASS_SWITCH
 

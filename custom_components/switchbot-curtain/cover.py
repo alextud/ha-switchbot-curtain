@@ -17,7 +17,13 @@ from homeassistant.const import CONF_MAC, CONF_NAME, CONF_PASSWORD, CONF_SENSOR_
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import ATTR_CURTAIN, DATA_COORDINATOR, DOMAIN, MANUFACTURER
+from .const import (
+    ATTR_CURTAIN,
+    CONF_RETRY_COUNT,
+    DATA_COORDINATOR,
+    DOMAIN,
+    MANUFACTURER,
+)
 
 # Initialize the logger
 _LOGGER = logging.getLogger(__name__)
@@ -40,6 +46,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
                         entry.data[CONF_MAC],
                         entry.data[CONF_NAME],
                         entry.data.get(CONF_PASSWORD, None),
+                        entry.options[CONF_RETRY_COUNT],
                     )
                 )
 
@@ -49,7 +56,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
 class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
     """Representation of a Switchbot."""
 
-    def __init__(self, coordinator, idx, mac, name, password) -> None:
+    def __init__(self, coordinator, idx, mac, name, password, retry_count) -> None:
         """Initialize the Switchbot."""
         super().__init__(coordinator)
         self._last_run_success = None
@@ -58,7 +65,7 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
         self._mac = mac
         self._model = self.coordinator.data[self._idx]["modelName"]
         self._device = self.coordinator.switchbot_api.SwitchbotCurtain(
-            mac=mac, password=password
+            mac=mac, password=password, retry_count=retry_count
         )
 
     @property
