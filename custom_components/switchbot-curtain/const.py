@@ -1,7 +1,7 @@
 """Constants for the switchbot integration."""
 from enum import Enum
 
-DOMAIN = "switchbot"
+DOMAIN = "switchbot-curtain"
 MANUFACTURER = "switchbot"
 
 ATTR_CURTAIN = "curtain"
