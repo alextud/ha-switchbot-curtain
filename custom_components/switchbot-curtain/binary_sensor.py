@@ -66,7 +66,7 @@ class SwitchBotBinarySensor(CoordinatorEntity, BinarySensorEntity):
         return f"{self.switchbot_name}.{self._sensor}"
 
     @property
-    def device_class(self) -> str:
+    def device_class(self) -> str | None:
         """Return the class of this device."""
         return self._sensor_type
 

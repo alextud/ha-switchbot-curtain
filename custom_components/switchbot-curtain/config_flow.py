@@ -14,9 +14,11 @@ from .const import (
     ATTR_CURTAIN,
     CONF_RETRY_COUNT,
     CONF_RETRY_TIMEOUT,
+    CONF_SCAN_TIMEOUT,
     CONF_TIME_BETWEEN_UPDATE_COMMAND,
     DEFAULT_RETRY_COUNT,
     DEFAULT_RETRY_TIMEOUT,
+    DEFAULT_SCAN_TIMEOUT,
     DEFAULT_TIME_BETWEEN_UPDATE_COMMAND,
     DOMAIN,
 )
@@ -149,6 +151,12 @@ class SwitchbotOptionsFlowHandler(OptionsFlow):
                 CONF_RETRY_TIMEOUT,
                 default=self.config_entry.options.get(
                     CONF_RETRY_TIMEOUT, DEFAULT_RETRY_TIMEOUT
+                ),
+            ): int,
+            vol.Optional(
+                CONF_SCAN_TIMEOUT,
+                default=self.config_entry.options.get(
+                    CONF_SCAN_TIMEOUT, DEFAULT_SCAN_TIMEOUT
                 ),
             ): int,
         }

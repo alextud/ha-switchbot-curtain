@@ -67,7 +67,12 @@ class SwitchBotSensor(CoordinatorEntity, Entity):
     @property
     def device_class(self) -> str:
         """Return the class of this device."""
-        return self._sensor_type
+        return self._sensor_type[0]
+
+    @property
+    def unit_of_measurement(self) -> str | None:
+        """Return the unit of measurement."""
+        return self._sensor_type[1]
 
     @property
     def state(self):

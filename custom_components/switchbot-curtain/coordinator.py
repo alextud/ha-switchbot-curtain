@@ -25,10 +25,12 @@ class SwitchbotDataUpdateCoordinator(DataUpdateCoordinator):
         update_interval: int,
         api: switchbot,
         retry_count: int,
+        scan_timeout: int,
     ) -> None:
         """Initialize global switchbot data updater."""
         self.switchbot_api = api
         self.retry_count = retry_count
+        self.scan_timeout = scan_timeout
         self.update_interval = timedelta(seconds=update_interval)
 
         super().__init__(
@@ -39,7 +41,7 @@ class SwitchbotDataUpdateCoordinator(DataUpdateCoordinator):
         """Fetch data from Switchbot via Switchbots Class."""
 
         _switchbot_api = self.switchbot_api.GetSwitchbotDevices().discover(
-            retry=self.retry_count
+            retry=self.retry_count, scan_timeout=self.scan_timeout
         )
 
         return _switchbot_api
