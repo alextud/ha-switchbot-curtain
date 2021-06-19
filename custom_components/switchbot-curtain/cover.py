@@ -17,7 +17,7 @@ from homeassistant.const import CONF_MAC, CONF_NAME, CONF_PASSWORD, CONF_SENSOR_
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import ATTR_CURTAIN, DATA_COORDINATOR, DOMAIN, MANUFACTURER
+from .const import ATTR_CURTAIN, CMD_HELPER, DATA_COORDINATOR, DOMAIN, MANUFACTURER
 
 # Initialize the logger
 _LOGGER = logging.getLogger(__name__)
@@ -25,7 +25,8 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up Switchbot curtain based on a config entry."""
-    coordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
+    coordinator = hass.data[DOMAIN][DATA_COORDINATOR]
+    cmd_helper = hass.data[DOMAIN][CMD_HELPER].SwitchbotCurtain
 
     curtain_device = []
 
@@ -40,6 +41,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
                         entry.data[CONF_MAC],
                         entry.data[CONF_NAME],
                         entry.data.get(CONF_PASSWORD, None),
+                        cmd_helper,
                     )
                 )
 
@@ -49,7 +51,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
 class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
     """Representation of a Switchbot."""
 
-    def __init__(self, coordinator, idx, mac, name, password=None) -> None:
+    def __init__(self, coordinator, idx, mac, name, password, cmd_helper) -> None:
         """Initialize the Switchbot."""
         super().__init__(coordinator)
         self._last_run_success = None
@@ -57,6 +59,7 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
         self.switchbot_name = name
         self._mac = mac
         self._model = self.coordinator.data[self._idx]["modelName"]
+        self._device = cmd_helper(mac=mac, password=password)
 
     @property
     def assumed_state(self) -> bool:
@@ -93,16 +96,14 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
     @property
     def is_closed(self):
         """Return if the cover is closed."""
-        return self.coordinator.data[self._idx]["data"]["position"] <= 10
+        return self.coordinator.data[self._idx]["data"]["position"] <= 20
 
     async def async_open_cover(self, **kwargs) -> None:
         """Open the curtain with using this device."""
 
         _LOGGER.info("Switchbot to open curtain %s", self._mac)
 
-        update_ok = await self.hass.async_add_executor_job(
-            self.coordinator.switchbot_control.open
-        )
+        update_ok = await self.hass.async_add_executor_job(self._device.open)
 
         if update_ok:
             self._last_run_success = True
@@ -114,9 +115,7 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
 
         _LOGGER.info("Switchbot to close the curtain %s", self._mac)
 
-        update_ok = await self.hass.async_add_executor_job(
-            self.coordinator.switchbot_control.close
-        )
+        update_ok = await self.hass.async_add_executor_job(self._device.close)
 
         if update_ok:
             self._last_run_success = True
@@ -128,9 +127,7 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
 
         _LOGGER.info("Switchbot to stop %s", self._mac)
 
-        update_ok = await self.hass.async_add_executor_job(
-            self.coordinator.switchbot_control.stop
-        )
+        update_ok = await self.hass.async_add_executor_job(self._device.stop)
 
         if update_ok:
             self._last_run_success = True
@@ -144,7 +141,7 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
         _LOGGER.info("Switchbot to move at %d %s", position, self._mac)
 
         update_ok = await self.hass.async_add_executor_job(
-            self.coordinator.switchbot_control.set_position, position
+            self._device.set_position, position
         )
 
         if update_ok:

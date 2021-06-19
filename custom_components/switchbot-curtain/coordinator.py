@@ -24,23 +24,20 @@ class SwitchbotDataUpdateCoordinator(DataUpdateCoordinator):
         *,
         update_interval: int,
         api: GetSwitchbotDevices,
-        api_control,
     ) -> None:
         """Initialize global switchbot data updater."""
         self.switchbot_device = api
-        self.switchbot_control = api_control
         self.update_interval = timedelta(seconds=update_interval)
 
         super().__init__(
             hass, _LOGGER, name=DOMAIN, update_interval=self.update_interval
         )
 
-    def _update_data(self) -> GetSwitchbotDevices:
-        """Fetch data from Switchbot via Switchbots Class."""
+    def _update_data(self):
+        """get switchbot services data."""
+        switchbot_device = self.switchbot_device
 
-        switchbot_devices = self.switchbot_device.discover()
-
-        return switchbot_devices
+        return switchbot_device
 
     async def _async_update_data(self):
         """Fetch data from switchbot."""
