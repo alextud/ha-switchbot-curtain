@@ -2,7 +2,8 @@
 import logging
 import threading
 
-import pygatt
+# pylint: disable=import-error
+from switchbot import GetSwitchbotDevices
 import voluptuous as vol
 
 from homeassistant.config_entries import ConfigFlow, OptionsFlow
@@ -30,21 +31,18 @@ _LOGGER = logging.getLogger(__name__)
 
 
 def _btle_connect(mac):
-    """Try to connect to switchbot device."""
-    adapter = pygatt.GATTToolBackend()
+    """Scan for BTLE advertisement data."""
+    devices = GetSwitchbotDevices()
 
-    try:
-        adapter.start(reset_on_start=False)
-        with CONNECT_LOCK:
-            device = adapter.connect(
-                mac, CONNECT_TIMEOUT, address_type=pygatt.BLEAddressType.random
-            )
-            device.disconnect()
+    with CONNECT_LOCK:
+        devices.discover()
 
-    finally:
-        adapter.stop()
+    switchbot = devices.get_device_data(mac=mac)
 
-    return device
+    if not switchbot:
+        raise NotConnectedError("Failed to discover switchbot")
+
+    return switchbot
 
 
 class SwitchbotConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -61,8 +59,8 @@ class SwitchbotConfigFlow(ConfigFlow, domain=DOMAIN):
         try:
             await self.hass.async_add_executor_job(_btle_connect, data[CONF_MAC])
 
-        except pygatt.exceptions.NotConnectedError as err:
-            raise pygatt.exceptions.NotConnectedError(err)
+        except NotConnectedError as err:
+            raise NotConnectedError(err) from err
 
         return self.async_create_entry(title=data[CONF_NAME], data=data)
 
@@ -87,7 +85,7 @@ class SwitchbotConfigFlow(ConfigFlow, domain=DOMAIN):
             try:
                 return await self._validate_mac(user_input)
 
-            except pygatt.exceptions.NotConnectedError:
+            except NotConnectedError:
                 errors["base"] = "cannot_connect"
 
             except Exception:  # pylint: disable=broad-except
@@ -162,3 +160,7 @@ class SwitchbotOptionsFlowHandler(OptionsFlow):
         }
 
         return self.async_show_form(step_id="init", data_schema=vol.Schema(options))
+
+
+class NotConnectedError(Exception):
+    """Exception for unable to find device."""

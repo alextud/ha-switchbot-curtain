@@ -3,6 +3,7 @@ import asyncio
 from datetime import timedelta
 import logging
 
+# pylint: disable=import-error
 import switchbot
 
 from homeassistant.core import HomeAssistant

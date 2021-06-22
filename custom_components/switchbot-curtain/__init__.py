@@ -1,4 +1,5 @@
 """Support for Switchbot devices."""
+# pylint: disable=import-error
 import switchbot
 
 from homeassistant.exceptions import ConfigEntryNotReady
