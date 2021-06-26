@@ -1,6 +1,5 @@
 """Config flow for Switchbot."""
 import logging
-import threading
 
 # pylint: disable=import-error
 from switchbot import GetSwitchbotDevices
@@ -24,19 +23,14 @@ from .const import (
     DOMAIN,
 )
 
-CONNECT_LOCK = threading.Lock()
-CONNECT_TIMEOUT = 15
-
 _LOGGER = logging.getLogger(__name__)
 
 
 def _btle_connect(mac):
     """Scan for BTLE advertisement data."""
-    devices = GetSwitchbotDevices()
-
-    with CONNECT_LOCK:
-        devices.discover()
-
+    # Try to find switchbot mac in nearby devices,
+    # by scanning for btle devices.
+    devices = GetSwitchbotDevices().discover()
     switchbot = devices.get_device_data(mac=mac)
 
     if not switchbot:
@@ -76,6 +70,7 @@ class SwitchbotConfigFlow(ConfigFlow, domain=DOMAIN):
         errors = {}
 
         if user_input is not None:
+            user_input[CONF_MAC] = user_input[CONF_MAC].replace("-", ":").lower()
 
             # abort if already configured.
             for item in self._async_current_entries():
@@ -110,6 +105,8 @@ class SwitchbotConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_import(self, import_config):
         """Handle config import from yaml."""
         _LOGGER.debug("import config: %s", import_config)
+
+        import_config[CONF_MAC] = import_config[CONF_MAC].replace("-", ":").lower()
 
         await self.async_set_unique_id(import_config[CONF_MAC].replace(":", ""))
         self._abort_if_unique_id_configured()

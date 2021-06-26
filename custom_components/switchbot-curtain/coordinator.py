@@ -1,5 +1,6 @@
 """Provides the switchbot DataUpdateCoordinator."""
-import asyncio
+from __future__ import annotations
+
 from datetime import timedelta
 import logging
 
@@ -10,8 +11,6 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import DOMAIN
-
-CONNECT_LOCK = asyncio.Lock()
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -30,6 +29,7 @@ class SwitchbotDataUpdateCoordinator(DataUpdateCoordinator):
     ) -> None:
         """Initialize global switchbot data updater."""
         self.switchbot_api = api
+        self.switchbot_devices = None
         self.retry_count = retry_count
         self.scan_timeout = scan_timeout
         self.update_interval = timedelta(seconds=update_interval)
@@ -38,22 +38,23 @@ class SwitchbotDataUpdateCoordinator(DataUpdateCoordinator):
             hass, _LOGGER, name=DOMAIN, update_interval=self.update_interval
         )
 
-    def _update_data(self) -> switchbot.GetSwitchbotDevices:
+    def _update_data(self) -> dict | None:
         """Fetch data from Switchbot via Switchbots Class."""
+        _devices_data = None
 
-        _switchbot_api = self.switchbot_api.GetSwitchbotDevices().discover(
+        _devices_data = self.switchbot_api.GetSwitchbotDevices().discover(
             retry=self.retry_count, scan_timeout=self.scan_timeout
         )
 
-        return _switchbot_api
+        if _devices_data:
+            self.switchbot_devices = _devices_data
 
-    async def _async_update_data(self):
+        return self.switchbot_devices
+
+    async def _async_update_data(self) -> dict | None:
         """Fetch data from switchbot."""
 
-        async with CONNECT_LOCK:
-            _get_switchbot_api = await self.hass.async_add_executor_job(
-                self._update_data
-            )
+        _get_switchbot_api = await self.hass.async_add_executor_job(self._update_data)
 
         if not _get_switchbot_api:
             raise UpdateFailed("Unable to fetch switchbot services data")
