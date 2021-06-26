@@ -1,6 +1,7 @@
 """Provides the switchbot DataUpdateCoordinator."""
 from __future__ import annotations
 
+import asyncio
 from datetime import timedelta
 import logging
 
@@ -12,6 +13,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 
 from .const import DOMAIN
 
+CONNECT_LOCK = asyncio.Lock()
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -51,10 +53,13 @@ class SwitchbotDataUpdateCoordinator(DataUpdateCoordinator):
 
         return self.switchbot_devices
 
-    async def _async_update_data(self) -> dict | None:
+    async def _async_update_data(self):
         """Fetch data from switchbot."""
 
-        _get_switchbot_api = await self.hass.async_add_executor_job(self._update_data)
+        async with CONNECT_LOCK:
+            _get_switchbot_api = await self.hass.async_add_executor_job(
+                self._update_data
+            )
 
         if not _get_switchbot_api:
             raise UpdateFailed("Unable to fetch switchbot services data")
