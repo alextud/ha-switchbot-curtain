@@ -1,6 +1,8 @@
 """Support for Switchbot bot."""
 from __future__ import annotations
 
+import asyncio
+import logging
 from typing import Any
 
 import voluptuous as vol
@@ -24,6 +26,10 @@ from .const import (
     MANUFACTURER,
 )
 
+# Initialize the logger
+_LOGGER = logging.getLogger(__name__)
+CONNECT_LOCK = asyncio.Lock()
+
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
         vol.Required(CONF_MAC): cv.string,
@@ -33,7 +39,9 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
 )
 
 
-async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
+async def async_setup_platform(
+    hass, config, async_add_entities, discovery_info=None
+) -> None:
     """Import yaml config and initiates config flow for Switchbot devices."""
 
     # Check if entry config exists and skips import if it does.
@@ -54,7 +62,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     )
 
 
-async def async_setup_entry(hass, entry, async_add_entities):
+async def async_setup_entry(hass, entry, async_add_entities) -> None:
     """Set up Switchbot based on a config entry."""
     coordinator = hass.data[DOMAIN][DATA_COORDINATOR]
 
@@ -96,7 +104,10 @@ class SwitchBot(CoordinatorEntity, SwitchEntity):
 
     async def async_turn_on(self, **kwargs) -> None:
         """Turn device on."""
-        update_ok = await self.hass.async_add_executor_job(self._device.turn_on)
+        _LOGGER.info("Turn Switchbot bot on %s", self._mac)
+
+        async with CONNECT_LOCK:
+            update_ok = await self.hass.async_add_executor_job(self._device.turn_on)
 
         if update_ok:
             self._last_run_success = True
@@ -105,7 +116,10 @@ class SwitchBot(CoordinatorEntity, SwitchEntity):
 
     async def async_turn_off(self, **kwargs) -> None:
         """Turn device off."""
-        update_ok = await self.hass.async_add_executor_job(self._device.turn_off)
+        _LOGGER.info("Turn Switchbot bot off %s", self._mac)
+
+        async with CONNECT_LOCK:
+            update_ok = await self.hass.async_add_executor_job(self._device.turn_off)
 
         if update_ok:
             self._last_run_success = True
@@ -142,7 +156,7 @@ class SwitchBot(CoordinatorEntity, SwitchEntity):
         }
 
     @property
-    def device_info(self):
+    def device_info(self) -> dict[str, Any]:
         """Return the device_info of the device."""
         return {
             "identifiers": {(DOMAIN, self._mac.replace(":", ""))},
@@ -152,6 +166,6 @@ class SwitchBot(CoordinatorEntity, SwitchEntity):
         }
 
     @property
-    def device_class(self):
+    def device_class(self) -> str:
         """Device class for the sensor."""
         return self._device_class

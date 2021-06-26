@@ -1,6 +1,7 @@
 """Support for SwitchBot curtains."""
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -27,9 +28,10 @@ from .const import (
 
 # Initialize the logger
 _LOGGER = logging.getLogger(__name__)
+CONNECT_LOCK = asyncio.Lock()
 
 
-async def async_setup_entry(hass, entry, async_add_entities):
+async def async_setup_entry(hass, entry, async_add_entities) -> None:
     """Set up Switchbot curtain based on a config entry."""
     coordinator = hass.data[DOMAIN][DATA_COORDINATOR]
 
@@ -69,11 +71,6 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
         )
 
     @property
-    def assumed_state(self) -> bool:
-        """Return true if unable to access real state of entity."""
-        return True
-
-    @property
     def unique_id(self) -> str:
         """Return a unique, Home Assistant friendly identifier for this entity."""
         return self._mac.replace(":", "")
@@ -96,12 +93,12 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
         return DEVICE_CLASS_CURTAIN
 
     @property
-    def supported_features(self):
+    def supported_features(self) -> str:
         """Flag supported features."""
         return SUPPORT_OPEN | SUPPORT_CLOSE | SUPPORT_STOP | SUPPORT_SET_POSITION
 
     @property
-    def is_closed(self):
+    def is_closed(self) -> int:
         """Return if the cover is closed."""
         return self.coordinator.data[self._idx]["data"]["position"] <= 20
 
@@ -110,7 +107,8 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
 
         _LOGGER.info("Switchbot to open curtain %s", self._mac)
 
-        update_ok = await self.hass.async_add_executor_job(self._device.open)
+        async with CONNECT_LOCK:
+            update_ok = await self.hass.async_add_executor_job(self._device.open)
 
         if update_ok:
             self._last_run_success = True
@@ -122,7 +120,8 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
 
         _LOGGER.info("Switchbot to close the curtain %s", self._mac)
 
-        update_ok = await self.hass.async_add_executor_job(self._device.close)
+        async with CONNECT_LOCK:
+            update_ok = await self.hass.async_add_executor_job(self._device.close)
 
         if update_ok:
             self._last_run_success = True
@@ -134,22 +133,24 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
 
         _LOGGER.info("Switchbot to stop %s", self._mac)
 
-        update_ok = await self.hass.async_add_executor_job(self._device.stop)
+        async with CONNECT_LOCK:
+            update_ok = await self.hass.async_add_executor_job(self._device.stop)
 
         if update_ok:
             self._last_run_success = True
         else:
             self._last_run_success = False
 
-    async def async_set_cover_position(self, **kwargs):
+    async def async_set_cover_position(self, **kwargs) -> None:
         """Move the cover shutter to a specific position."""
         position = kwargs.get(ATTR_POSITION)
 
         _LOGGER.info("Switchbot to move at %d %s", position, self._mac)
 
-        update_ok = await self.hass.async_add_executor_job(
-            self._device.set_position, position
-        )
+        async with CONNECT_LOCK:
+            update_ok = await self.hass.async_add_executor_job(
+                self._device.set_position, position
+            )
 
         if update_ok:
             self._last_run_success = True
@@ -157,12 +158,12 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
             self._last_run_success = False
 
     @property
-    def current_cover_position(self):
+    def current_cover_position(self) -> int:
         """Return the current position of cover shutter."""
         return self.coordinator.data[self._idx]["data"]["position"]
 
     @property
-    def device_info(self):
+    def device_info(self) -> dict[str, Any]:
         """Return the device_info of the device."""
         return {
             "identifiers": {(DOMAIN, self._mac.replace(":", ""))},
