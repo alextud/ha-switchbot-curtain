@@ -31,7 +31,6 @@ class SwitchbotDataUpdateCoordinator(DataUpdateCoordinator):
     ) -> None:
         """Initialize global switchbot data updater."""
         self.switchbot_api = api
-        self.switchbot_devices = None
         self.retry_count = retry_count
         self.scan_timeout = scan_timeout
         self.update_interval = timedelta(seconds=update_interval)
@@ -42,18 +41,14 @@ class SwitchbotDataUpdateCoordinator(DataUpdateCoordinator):
 
     def _update_data(self) -> dict | None:
         """Fetch data from Switchbot via Switchbots Class."""
-        _devices_data = None
 
-        _devices_data = self.switchbot_api.GetSwitchbotDevices().discover(
+        _switchbot_api = self.switchbot_api.GetSwitchbotDevices().discover(
             retry=self.retry_count, scan_timeout=self.scan_timeout
         )
 
-        if _devices_data:
-            self.switchbot_devices = _devices_data
+        return _switchbot_api
 
-        return self.switchbot_devices
-
-    async def _async_update_data(self):
+    async def _async_update_data(self) -> dict | None:
         """Fetch data from switchbot."""
 
         async with CONNECT_LOCK:
