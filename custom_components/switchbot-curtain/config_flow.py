@@ -63,11 +63,11 @@ class SwitchbotConfigFlow(ConfigFlow, domain=DOMAIN):
         except NotConnectedError as err:
             raise NotConnectedError(err) from err
 
-        if _btle_adv_data["data"]["modelName"] == "WoHand":
+        if _btle_adv_data["modelName"] == "WoHand":
             data[CONF_SENSOR_TYPE] = ATTR_BOT
             return self.async_create_entry(title=data[CONF_NAME], data=data)
 
-        if _btle_adv_data["data"]["modelName"] == "WoCurtain":
+        if _btle_adv_data["modelName"] == "WoCurtain":
             data[CONF_SENSOR_TYPE] = ATTR_CURTAIN
             return self.async_create_entry(title=data[CONF_NAME], data=data)
 
