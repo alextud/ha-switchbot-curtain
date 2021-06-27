@@ -32,13 +32,14 @@ def _btle_connect(mac):
     # Try to find switchbot mac in nearby devices,
     # by scanning for btle devices.
 
-    devices = GetSwitchbotDevices().discover()
-    switchbot = devices.get_device_data(mac=mac)
+    switchbots = GetSwitchbotDevices()
+    switchbots.discover()
+    switchbot_device = switchbots.get_device_data(mac=mac)
 
-    if not switchbot:
+    if not switchbot_device:
         raise NotConnectedError("Failed to discover switchbot")
 
-    return switchbot
+    return switchbot_device
 
 
 class SwitchbotConfigFlow(ConfigFlow, domain=DOMAIN):
