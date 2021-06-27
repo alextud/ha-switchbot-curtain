@@ -71,7 +71,7 @@ class SwitchbotConfigFlow(ConfigFlow, domain=DOMAIN):
             data[CONF_SENSOR_TYPE] = ATTR_CURTAIN
             return self.async_create_entry(title=data[CONF_NAME], data=data)
 
-        self.async_abort(reason="switchbot_unsupported_type")
+        return self.async_abort(reason="switchbot_unsupported_type")
 
     @staticmethod
     @callback
