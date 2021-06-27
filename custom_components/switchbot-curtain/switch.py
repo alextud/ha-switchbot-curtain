@@ -1,9 +1,8 @@
 """Support for Switchbot bot."""
 from __future__ import annotations
 
-import asyncio
+from asyncio import Lock
 import logging
-from typing import Any
 
 import voluptuous as vol
 
@@ -28,7 +27,7 @@ from .const import (
 
 # Initialize the logger
 _LOGGER = logging.getLogger(__name__)
-CONNECT_LOCK = asyncio.Lock()
+CONNECT_LOCK = Lock()
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
@@ -55,7 +54,7 @@ async def async_setup_platform(
             data={
                 CONF_NAME: config[CONF_NAME],
                 CONF_PASSWORD: config.get(CONF_PASSWORD, None),
-                CONF_MAC: config[CONF_MAC],
+                CONF_MAC: config[CONF_MAC].replace("-", ":").lower(),
                 CONF_SENSOR_TYPE: ATTR_BOT,
             },
         )
@@ -64,7 +63,7 @@ async def async_setup_platform(
 
 async def async_setup_entry(hass, entry, async_add_entities) -> None:
     """Set up Switchbot based on a config entry."""
-    coordinator = hass.data[DOMAIN][DATA_COORDINATOR]
+    coordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
 
     bot_device = []
 
@@ -148,7 +147,7 @@ class SwitchBot(CoordinatorEntity, SwitchEntity):
         return self.switchbot_name
 
     @property
-    def device_state_attributes(self) -> dict[str, Any]:
+    def device_state_attributes(self) -> dict:
         """Return the state attributes."""
         return {
             "last_run_success": self._last_run_success,
@@ -156,7 +155,7 @@ class SwitchBot(CoordinatorEntity, SwitchEntity):
         }
 
     @property
-    def device_info(self) -> dict[str, Any]:
+    def device_info(self) -> dict:
         """Return the device_info of the device."""
         return {
             "identifiers": {(DOMAIN, self._mac.replace(":", ""))},

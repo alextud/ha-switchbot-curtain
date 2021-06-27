@@ -1,9 +1,8 @@
 """Support for SwitchBot curtains."""
 from __future__ import annotations
 
-import asyncio
+from asyncio import Lock
 import logging
-from typing import Any
 
 from homeassistant.components.cover import (
     ATTR_POSITION,
@@ -28,12 +27,12 @@ from .const import (
 
 # Initialize the logger
 _LOGGER = logging.getLogger(__name__)
-CONNECT_LOCK = asyncio.Lock()
+CONNECT_LOCK = Lock()
 
 
 async def async_setup_entry(hass, entry, async_add_entities) -> None:
     """Set up Switchbot curtain based on a config entry."""
-    coordinator = hass.data[DOMAIN][DATA_COORDINATOR]
+    coordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
 
     curtain_device = []
 
@@ -81,7 +80,7 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
         return self.switchbot_name
 
     @property
-    def device_state_attributes(self) -> dict[str, Any]:
+    def device_state_attributes(self) -> dict:
         """Return the state attributes."""
         return {
             "last_run_success": self._last_run_success,
@@ -163,7 +162,7 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
         return self.coordinator.data[self._idx]["data"]["position"]
 
     @property
-    def device_info(self) -> dict[str, Any]:
+    def device_info(self) -> dict:
         """Return the device_info of the device."""
         return {
             "identifiers": {(DOMAIN, self._mac.replace(":", ""))},

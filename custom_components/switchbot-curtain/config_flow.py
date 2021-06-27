@@ -1,8 +1,8 @@
 """Config flow for Switchbot."""
+from asyncio import Lock
 import logging
 
-# pylint: disable=import-error
-from switchbot import GetSwitchbotDevices
+from switchbot import GetSwitchbotDevices  # pylint: disable=import-error
 import voluptuous as vol
 
 from homeassistant.config_entries import ConfigFlow, OptionsFlow
@@ -24,12 +24,14 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+CONNECT_LOCK = Lock()
 
 
 def _btle_connect(mac):
     """Scan for BTLE advertisement data."""
     # Try to find switchbot mac in nearby devices,
     # by scanning for btle devices.
+
     devices = GetSwitchbotDevices().discover()
     switchbot = devices.get_device_data(mac=mac)
 
@@ -50,13 +52,25 @@ class SwitchbotConfigFlow(ConfigFlow, domain=DOMAIN):
         self._abort_if_unique_id_configured()
 
         # Validate bluetooth device mac.
+        # CONNECT_LOCK prevents btle adapter exceptions if there are multiple calls to this method.
         try:
-            await self.hass.async_add_executor_job(_btle_connect, data[CONF_MAC])
+            async with CONNECT_LOCK:
+                _btle_adv_data = await self.hass.async_add_executor_job(
+                    _btle_connect, data[CONF_MAC]
+                )
 
         except NotConnectedError as err:
             raise NotConnectedError(err) from err
 
-        return self.async_create_entry(title=data[CONF_NAME], data=data)
+        if _btle_adv_data["data"]["modelName"] == "WoHand":
+            data[CONF_SENSOR_TYPE] = ATTR_BOT
+            return self.async_create_entry(title=data[CONF_NAME], data=data)
+
+        if _btle_adv_data["data"]["modelName"] == "WoCurtain":
+            data[CONF_SENSOR_TYPE] = ATTR_CURTAIN
+            return self.async_create_entry(title=data[CONF_NAME], data=data)
+
+        self.async_abort(reason="switchbot_unsupported_type")
 
     @staticmethod
     @callback
@@ -92,9 +106,6 @@ class SwitchbotConfigFlow(ConfigFlow, domain=DOMAIN):
                 vol.Required(CONF_NAME): str,
                 vol.Optional(CONF_PASSWORD): str,
                 vol.Required(CONF_MAC): str,
-                vol.Required(CONF_SENSOR_TYPE, default=ATTR_BOT): vol.In(
-                    [ATTR_BOT, ATTR_CURTAIN]
-                ),
             }
         )
 
