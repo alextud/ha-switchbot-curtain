@@ -82,9 +82,7 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
     @property
     def device_state_attributes(self) -> dict:
         """Return the state attributes."""
-        return {
-            "last_run_success": self._last_run_success,
-        }
+        return {"last_run_success": self._last_run_success, "MAC": self._mac}
 
     @property
     def device_class(self) -> str:
@@ -111,6 +109,7 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
 
         if update_ok:
             self._last_run_success = True
+            self.coordinator.async_request_refresh()
         else:
             self._last_run_success = False
 
@@ -124,6 +123,7 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
 
         if update_ok:
             self._last_run_success = True
+            self.coordinator.async_request_refresh()
         else:
             self._last_run_success = False
 
@@ -137,6 +137,7 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
 
         if update_ok:
             self._last_run_success = True
+            self.coordinator.async_request_refresh()
         else:
             self._last_run_success = False
 
@@ -153,6 +154,7 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
 
         if update_ok:
             self._last_run_success = True
+            self.coordinator.async_request_refresh()
         else:
             self._last_run_success = False
 

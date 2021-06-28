@@ -1,4 +1,6 @@
 """Config flow for Switchbot."""
+from __future__ import annotations
+
 from asyncio import Lock
 import logging
 
@@ -27,7 +29,7 @@ _LOGGER = logging.getLogger(__name__)
 CONNECT_LOCK = Lock()
 
 
-def _btle_connect(mac):
+def _btle_connect(mac) -> dict | None:
     """Scan for BTLE advertisement data."""
     # Try to find switchbot mac in nearby devices,
     # by scanning for btle devices.
@@ -47,7 +49,7 @@ class SwitchbotConfigFlow(ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
-    async def _validate_mac(self, data):
+    async def _validate_mac(self, data) -> None:
         """Try to connect to Switchbot device and create entry if successful."""
         await self.async_set_unique_id(data[CONF_MAC].replace(":", ""))
         self._abort_if_unique_id_configured()
@@ -75,11 +77,11 @@ class SwitchbotConfigFlow(ConfigFlow, domain=DOMAIN):
 
     @staticmethod
     @callback
-    def async_get_options_flow(config_entry):
+    def async_get_options_flow(config_entry) -> None:
         """Get the options flow for this handler."""
         return SwitchbotOptionsFlowHandler(config_entry)
 
-    async def async_step_user(self, user_input=None):
+    async def async_step_user(self, user_input=None) -> None:
         """Handle a flow initiated by the user."""
 
         errors = {}
@@ -114,7 +116,7 @@ class SwitchbotConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id="user", data_schema=data_schema, errors=errors
         )
 
-    async def async_step_import(self, import_config):
+    async def async_step_import(self, import_config) -> None:
         """Handle config import from yaml."""
         _LOGGER.debug("import config: %s", import_config)
 
@@ -131,12 +133,12 @@ class SwitchbotConfigFlow(ConfigFlow, domain=DOMAIN):
 class SwitchbotOptionsFlowHandler(OptionsFlow):
     """Handle Switchbot options."""
 
-    def __init__(self, config_entry):
+    def __init__(self, config_entry) -> None:
         """Initialize options flow."""
         self.config_entry = config_entry
 
-    async def async_step_init(self, user_input=None):
-        """Manage Ezviz options."""
+    async def async_step_init(self, user_input=None) -> None:
+        """Manage Switchbot options."""
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 

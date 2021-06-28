@@ -110,6 +110,7 @@ class SwitchBot(CoordinatorEntity, SwitchEntity):
 
         if update_ok:
             self._last_run_success = True
+            await self.coordinator.async_request_refresh()
         else:
             self._last_run_success = False
 
@@ -122,6 +123,7 @@ class SwitchBot(CoordinatorEntity, SwitchEntity):
 
         if update_ok:
             self._last_run_success = True
+            await self.coordinator.async_request_refresh()
         else:
             self._last_run_success = False
 
@@ -151,6 +153,7 @@ class SwitchBot(CoordinatorEntity, SwitchEntity):
         """Return the state attributes."""
         return {
             "last_run_success": self._last_run_success,
+            "MAC": self._mac,
             "switch_mode": self.coordinator.data[self._idx]["data"]["switchMode"],
         }
 

@@ -4,9 +4,12 @@ from enum import Enum
 DOMAIN = "switchbot-curtain"
 MANUFACTURER = "switchbot"
 
-ATTR_CURTAIN = "curtain"
+# Config Attributes
 ATTR_BOT = "bot"
+ATTR_CURTAIN = "curtain"
 DEFAULT_NAME = "Switchbot"
+
+# Config Defaults
 DEFAULT_RETRY_COUNT = 3
 DEFAULT_RETRY_TIMEOUT = 5
 DEFAULT_TIME_BETWEEN_UPDATE_COMMAND = 60
