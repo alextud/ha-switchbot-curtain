@@ -1,7 +1,6 @@
 """Support for SwitchBot curtains."""
 from __future__ import annotations
 
-from asyncio import Lock
 import logging
 
 from homeassistant.components.cover import (
@@ -27,7 +26,6 @@ from .const import (
 
 # Initialize the logger
 _LOGGER = logging.getLogger(__name__)
-CONNECT_LOCK = Lock()
 
 
 async def async_setup_entry(hass, entry, async_add_entities) -> None:
@@ -104,7 +102,7 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
 
         _LOGGER.info("Switchbot to open curtain %s", self._mac)
 
-        async with CONNECT_LOCK:
+        async with self.coordinator.connect_lock:
             update_ok = await self.hass.async_add_executor_job(self._device.open)
 
         if update_ok:
@@ -118,7 +116,7 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
 
         _LOGGER.info("Switchbot to close the curtain %s", self._mac)
 
-        async with CONNECT_LOCK:
+        async with self.coordinator.connect_lock:
             update_ok = await self.hass.async_add_executor_job(self._device.close)
 
         if update_ok:
@@ -132,7 +130,7 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
 
         _LOGGER.info("Switchbot to stop %s", self._mac)
 
-        async with CONNECT_LOCK:
+        async with self.coordinator.connect_lock:
             update_ok = await self.hass.async_add_executor_job(self._device.stop)
 
         if update_ok:
@@ -147,7 +145,7 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
 
         _LOGGER.info("Switchbot to move at %d %s", position, self._mac)
 
-        async with CONNECT_LOCK:
+        async with self.coordinator.connect_lock:
             update_ok = await self.hass.async_add_executor_job(
                 self._device.set_position, position
             )
