@@ -67,6 +67,18 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
             mac=mac, password=password, retry_count=retry_count
         )
 
+    @callback
+    def async_restore_last_state(self, last_state):
+        """Restore previous state."""
+        self._state = last_state.state
+        if "current_position" in last_state.attributes:
+            self._current_position = last_state.attributes["current_position"]
+
+    @property
+    def assumed_state(self) -> bool:
+        """Return true if unable to access real state of entity."""
+        return True
+
     @property
     def unique_id(self) -> str:
         """Return a unique, Home Assistant friendly identifier for this entity."""
