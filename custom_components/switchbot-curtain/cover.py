@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 
 from homeassistant.components.cover import (
+    ATTR_CURRENT_POSITION,
     ATTR_POSITION,
     DEVICE_CLASS_CURTAIN,
     SUPPORT_CLOSE,
@@ -67,11 +68,18 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
             mac=mac, password=password, retry_count=retry_count
         )
 
-    def async_restore_last_state(self, last_state):
-        """Restore previous state."""
-        self._state = last_state.state
-        if "current_position" in last_state.attributes:
-            self._current_position = last_state.attributes["current_position"]
+    async def async_added_to_hass(self) -> None:
+        """Run when entity about to be added."""
+        await super().async_added_to_hass()
+        last_state = await self.async_get_last_state()
+        if not last_state:
+            return
+        if ATTR_CURRENT_POSITION in last_state.attributes:
+            self._attr_current_cover_position = last_state.attributes[
+                ATTR_CURRENT_POSITION
+            ]
+            self._attr_state = last_state.state
+            self._last_run_success = last_state.attributes["last_run_success"]
 
     @property
     def assumed_state(self) -> bool:
@@ -109,7 +117,7 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
         return self.coordinator.data[self._idx]["data"]["position"] <= 20
 
     async def async_open_cover(self, **kwargs) -> None:
-        """Open the curtain with using this device."""
+        """Open the curtain."""
 
         _LOGGER.info("Switchbot to open curtain %s", self._mac)
 
@@ -122,7 +130,7 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
             self._last_run_success = False
 
     async def async_close_cover(self, **kwargs) -> None:
-        """Close the curtain with using this device."""
+        """Close the curtain."""
 
         _LOGGER.info("Switchbot to close the curtain %s", self._mac)
 

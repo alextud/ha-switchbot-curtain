@@ -100,6 +100,15 @@ class SwitchBot(CoordinatorEntity, SwitchEntity, RestoreEntity):
         )
         self._device_class = DEVICE_CLASS_SWITCH
 
+    async def async_added_to_hass(self) -> None:
+        """Run when entity about to be added."""
+        await super().async_added_to_hass()
+        last_state = await self.async_get_last_state()
+        if not last_state:
+            return
+        self._attr_state = last_state.state == "off"
+        self._last_run_success = last_state.attributes["last_run_success"]
+
     async def async_turn_on(self, **kwargs) -> None:
         """Turn device on."""
         _LOGGER.info("Turn Switchbot bot on %s", self._mac)
