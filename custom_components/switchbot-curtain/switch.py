@@ -1,9 +1,7 @@
 """Support for Switchbot bot."""
 from __future__ import annotations
-import asyncio
 
 import logging
-from time import sleep
 
 import voluptuous as vol
 
@@ -116,31 +114,27 @@ class SwitchBot(CoordinatorEntity, SwitchEntity, RestoreEntity):
         """Turn device on."""
         _LOGGER.info("Turn Switchbot bot on %s", self._mac)
 
-        if self.coordinator.connect_lock:
-            asyncio.sleep(5)
+        async with self.coordinator.connect_lock:
+            update_ok = await self.hass.async_add_executor_job(self._device.turn_on)
 
-        update_ok = await self.hass.async_add_executor_job(self._device.turn_on)
-
-        if update_ok:
-            self._last_run_success = True
-            await self.coordinator.async_request_refresh()
-        else:
-            self._last_run_success = False
+            if update_ok:
+                self._last_run_success = True
+                await self.coordinator.async_request_refresh()
+            else:
+                self._last_run_success = False
 
     async def async_turn_off(self, **kwargs) -> None:
         """Turn device off."""
         _LOGGER.info("Turn Switchbot bot off %s", self._mac)
 
-        if self.coordinator.connect_lock:
-            asyncio.sleep(5)
+        async with self.coordinator.connect_lock:
+            update_ok = await self.hass.async_add_executor_job(self._device.turn_off)
 
-        update_ok = await self.hass.async_add_executor_job(self._device.turn_off)
-
-        if update_ok:
-            self._last_run_success = True
-            await self.coordinator.async_request_refresh()
-        else:
-            self._last_run_success = False
+            if update_ok:
+                self._last_run_success = True
+                await self.coordinator.async_request_refresh()
+            else:
+                self._last_run_success = False
 
     @property
     def assumed_state(self) -> bool:
