@@ -9,14 +9,13 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DATA_COORDINATOR, DOMAIN, MANUFACTURER, SensorType
 
-PARALLEL_UPDATES = 1
 # Initialize the logger
 _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up Switchbot sensor based on a config entry."""
-    coordinator = hass.data[DOMAIN][DATA_COORDINATOR]
+    coordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
 
     sensors = []
 

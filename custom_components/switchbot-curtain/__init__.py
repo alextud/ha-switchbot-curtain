@@ -35,30 +35,29 @@ async def async_setup_entry(hass, entry) -> bool:
 
         hass.config_entries.async_update_entry(entry, options=options)
 
-    if not hass.data[DOMAIN].get(DATA_COORDINATOR):
+    switchbot.DEFAULT_RETRY_TIMEOUT = entry.options[CONF_RETRY_TIMEOUT]
 
-        switchbot.DEFAULT_RETRY_TIMEOUT = entry.options[CONF_RETRY_TIMEOUT]
+    # Store api in coordinator.
+    coordinator = SwitchbotDataUpdateCoordinator(
+        hass,
+        update_interval=entry.options[CONF_TIME_BETWEEN_UPDATE_COMMAND],
+        api=switchbot,
+        retry_count=entry.options[CONF_RETRY_COUNT],
+        scan_timeout=entry.options[CONF_SCAN_TIMEOUT],
+    )
 
-        # Store api in coordinator.
-        coordinator = SwitchbotDataUpdateCoordinator(
-            hass,
-            update_interval=entry.options[CONF_TIME_BETWEEN_UPDATE_COMMAND],
-            api=switchbot,
-            retry_count=entry.options[CONF_RETRY_COUNT],
-            scan_timeout=entry.options[CONF_SCAN_TIMEOUT],
-        )
+    await coordinator.async_config_entry_first_refresh()
 
-        await coordinator.async_config_entry_first_refresh()
-
-        if not coordinator.last_update_success:
-            raise ConfigEntryNotReady
-
-        # Creates reference to api via coordinator, this should result in single poll for all entities.
-        hass.data[DOMAIN] = {DATA_COORDINATOR: coordinator}
+    if not coordinator.last_update_success:
+        raise ConfigEntryNotReady
 
     undo_listener = entry.add_update_listener(_async_update_listener)
 
-    hass.data[DOMAIN][entry.entry_id] = {DATA_UNDO_UPDATE_LISTENER: undo_listener}
+    # Creates reference to api via coordinator, this should result in single poll for all entities.
+    hass.data[DOMAIN][entry.entry_id] = {
+        DATA_COORDINATOR: coordinator,
+        DATA_UNDO_UPDATE_LISTENER: undo_listener,
+    }
 
     hass.config_entries.async_setup_platforms(entry, PLATFORMS)
 
