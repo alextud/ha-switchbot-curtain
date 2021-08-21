@@ -67,7 +67,6 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
             mac=mac, password=password, retry_count=retry_count
         )
 
-    @callback
     def async_restore_last_state(self, last_state):
         """Restore previous state."""
         self._state = last_state.state
