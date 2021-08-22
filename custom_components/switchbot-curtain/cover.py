@@ -126,7 +126,7 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
 
         if update_ok:
             self._last_run_success = True
-            self.coordinator.async_request_refresh()
+            self._attr_current_cover_position = 100
         else:
             self._last_run_success = False
 
@@ -140,7 +140,7 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
 
         if update_ok:
             self._last_run_success = True
-            self.coordinator.async_request_refresh()
+            self._attr_current_cover_position = 0
         else:
             self._last_run_success = False
 
@@ -154,7 +154,6 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
 
         if update_ok:
             self._last_run_success = True
-            self.coordinator.async_request_refresh()
         else:
             self._last_run_success = False
 
@@ -171,7 +170,7 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
 
         if update_ok:
             self._last_run_success = True
-            self.coordinator.async_request_refresh()
+            self._attr_current_cover_position = position
         else:
             self._last_run_success = False
 

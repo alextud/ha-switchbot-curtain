@@ -13,6 +13,7 @@ from homeassistant.components.switch import (
 from homeassistant.config_entries import SOURCE_IMPORT
 from homeassistant.const import CONF_MAC, CONF_NAME, CONF_PASSWORD, CONF_SENSOR_TYPE
 import homeassistant.helpers.config_validation as cv
+from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -118,7 +119,7 @@ class SwitchBot(CoordinatorEntity, SwitchEntity, RestoreEntity):
 
         if update_ok:
             self._last_run_success = True
-            await self.coordinator.async_request_refresh()
+            self._attr_is_on = True
         else:
             self._last_run_success = False
 
@@ -131,7 +132,7 @@ class SwitchBot(CoordinatorEntity, SwitchEntity, RestoreEntity):
 
         if update_ok:
             self._last_run_success = True
-            await self.coordinator.async_request_refresh()
+            self._attr_is_on = False
         else:
             self._last_run_success = False
 
@@ -167,7 +168,7 @@ class SwitchBot(CoordinatorEntity, SwitchEntity, RestoreEntity):
         }
 
     @property
-    def device_info(self) -> dict:
+    def device_info(self) -> DeviceInfo:
         """Return the device_info of the device."""
         return {
             "identifiers": {(DOMAIN, self._mac.replace(":", ""))},
