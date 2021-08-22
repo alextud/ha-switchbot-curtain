@@ -16,7 +16,7 @@ PARALLEL_UPDATES = 1
 
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up Switchbot curtain based on a config entry."""
-    coordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
+    coordinator = hass.data[DOMAIN][DATA_COORDINATOR]
 
     binary_sensors = []
 

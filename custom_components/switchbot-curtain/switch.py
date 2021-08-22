@@ -65,7 +65,7 @@ async def async_setup_platform(
 
 async def async_setup_entry(hass, entry, async_add_entities) -> None:
     """Set up Switchbot based on a config entry."""
-    coordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
+    coordinator = hass.data[DOMAIN][DATA_COORDINATOR]
 
     bot_device = []
 
