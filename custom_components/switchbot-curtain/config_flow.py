@@ -4,12 +4,12 @@ from __future__ import annotations
 from asyncio import Lock
 import logging
 
-from switchbot import GetSwitchbotDevices  # pylint: disable=import-error
 import voluptuous as vol
 
 from homeassistant.config_entries import ConfigFlow, OptionsFlow
 from homeassistant.const import CONF_MAC, CONF_NAME, CONF_PASSWORD, CONF_SENSOR_TYPE
 from homeassistant.core import callback
+from switchbot import GetSwitchbotDevices  # pylint: disable=import-error
 
 from .const import (
     ATTR_BOT,

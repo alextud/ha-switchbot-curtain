@@ -121,7 +121,8 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
 
         _LOGGER.info("Switchbot to open curtain %s", self._mac)
 
-        update_ok = await self.hass.async_add_executor_job(self._device.open)
+        async with self.coordinator.api_lock:
+            update_ok = await self.hass.async_add_executor_job(self._device.open)
 
         if update_ok:
             self._last_run_success = True
@@ -134,7 +135,8 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
 
         _LOGGER.info("Switchbot to close the curtain %s", self._mac)
 
-        update_ok = await self.hass.async_add_executor_job(self._device.close)
+        async with self.coordinator.api_lock:
+            update_ok = await self.hass.async_add_executor_job(self._device.close)
 
         if update_ok:
             self._last_run_success = True
@@ -147,7 +149,8 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
 
         _LOGGER.info("Switchbot to stop %s", self._mac)
 
-        update_ok = await self.hass.async_add_executor_job(self._device.stop)
+        async with self.coordinator.api_lock:
+            update_ok = await self.hass.async_add_executor_job(self._device.stop)
 
         if update_ok:
             self._last_run_success = True
@@ -161,9 +164,10 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
 
         _LOGGER.info("Switchbot to move at %d %s", position, self._mac)
 
-        update_ok = await self.hass.async_add_executor_job(
-            self._device.set_position, position
-        )
+        async with self.coordinator.api_lock:
+            update_ok = await self.hass.async_add_executor_job(
+                self._device.set_position, position
+            )
 
         if update_ok:
             self._last_run_success = True

@@ -1,7 +1,8 @@
 """Support for Switchbot devices."""
-import switchbot  # pylint: disable=import-error
+from asyncio import Lock
 
 from homeassistant.exceptions import ConfigEntryNotReady
+import switchbot  # pylint: disable=import-error
 
 from .const import (
     CONF_RETRY_COUNT,
@@ -37,6 +38,10 @@ async def async_setup_entry(hass, entry) -> bool:
 
     switchbot.DEFAULT_RETRY_TIMEOUT = entry.options[CONF_RETRY_TIMEOUT]
 
+    # BTLE has issues with multiple connections,
+    # so we use a lock to ensure that only one API request is reaching it at a time:
+    api_lock = Lock()
+
     # Store api in coordinator.
     coordinator = SwitchbotDataUpdateCoordinator(
         hass,
@@ -44,6 +49,7 @@ async def async_setup_entry(hass, entry) -> bool:
         api=switchbot,
         retry_count=entry.options[CONF_RETRY_COUNT],
         scan_timeout=entry.options[CONF_SCAN_TIMEOUT],
+        api_lock=api_lock,
     )
 
     await coordinator.async_config_entry_first_refresh()

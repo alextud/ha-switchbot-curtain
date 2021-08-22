@@ -113,7 +113,8 @@ class SwitchBot(CoordinatorEntity, SwitchEntity, RestoreEntity):
         """Turn device on."""
         _LOGGER.info("Turn Switchbot bot on %s", self._mac)
 
-        update_ok = await self.hass.async_add_executor_job(self._device.turn_on)
+        async with self.coordinator.api_lock:
+            update_ok = await self.hass.async_add_executor_job(self._device.turn_on)
 
         if update_ok:
             self._last_run_success = True
@@ -125,7 +126,8 @@ class SwitchBot(CoordinatorEntity, SwitchEntity, RestoreEntity):
         """Turn device off."""
         _LOGGER.info("Turn Switchbot bot off %s", self._mac)
 
-        update_ok = await self.hass.async_add_executor_job(self._device.turn_off)
+        async with self.coordinator.api_lock:
+            update_ok = await self.hass.async_add_executor_job(self._device.turn_off)
 
         if update_ok:
             self._last_run_success = True
