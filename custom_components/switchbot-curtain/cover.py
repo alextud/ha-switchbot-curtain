@@ -14,6 +14,7 @@ from homeassistant.components.cover import (
     CoverEntity,
 )
 from homeassistant.const import CONF_MAC, CONF_NAME, CONF_PASSWORD, CONF_SENSOR_TYPE
+from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -27,6 +28,7 @@ from .const import (
 
 # Initialize the logger
 _LOGGER = logging.getLogger(__name__)
+PARALLEL_UPDATES = 1
 
 
 async def async_setup_entry(hass, entry, async_add_entities) -> None:
@@ -180,7 +182,7 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
         return self.coordinator.data[self._idx]["data"]["position"]
 
     @property
-    def device_info(self) -> dict:
+    def device_info(self) -> DeviceInfo:
         """Return the device_info of the device."""
         return {
             "identifiers": {(DOMAIN, self._mac.replace(":", ""))},

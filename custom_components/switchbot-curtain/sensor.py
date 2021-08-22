@@ -11,6 +11,7 @@ from .const import DATA_COORDINATOR, DOMAIN, MANUFACTURER, SensorType
 
 # Initialize the logger
 _LOGGER = logging.getLogger(__name__)
+PARALLEL_UPDATES = 1
 
 
 async def async_setup_entry(hass, entry, async_add_entities):

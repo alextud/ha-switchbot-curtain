@@ -28,6 +28,7 @@ from .const import (
 
 # Initialize the logger
 _LOGGER = logging.getLogger(__name__)
+PARALLEL_UPDATES = 1
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
