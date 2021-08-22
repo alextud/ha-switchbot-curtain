@@ -1,6 +1,7 @@
 """Support for SwitchBot curtains."""
 from __future__ import annotations
 
+from asyncio import sleep
 import logging
 
 from homeassistant.components.cover import (
@@ -125,6 +126,7 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
 
         async with self.coordinator.api_lock:
             update_ok = await self.hass.async_add_executor_job(self._device.open)
+            sleep(1)
 
         if update_ok:
             self._last_run_success = True
@@ -139,6 +141,7 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
 
         async with self.coordinator.api_lock:
             update_ok = await self.hass.async_add_executor_job(self._device.close)
+            sleep(1)
 
         if update_ok:
             self._last_run_success = True
@@ -153,6 +156,7 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
 
         async with self.coordinator.api_lock:
             update_ok = await self.hass.async_add_executor_job(self._device.stop)
+            sleep(1)
 
         if update_ok:
             self._last_run_success = True
@@ -169,6 +173,7 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
             update_ok = await self.hass.async_add_executor_job(
                 self._device.set_position, position
             )
+            sleep(1)
 
         if update_ok:
             self._last_run_success = True
