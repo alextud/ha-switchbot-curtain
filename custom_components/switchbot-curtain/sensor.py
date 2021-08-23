@@ -3,8 +3,14 @@ from __future__ import annotations
 
 import logging
 
+from homeassistant.components.switchbot.coordinator import (
+    SwitchbotDataUpdateCoordinator,
+)
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_MAC, CONF_NAME
-from homeassistant.helpers.entity import Entity
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import DeviceInfo, Entity
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DATA_COORDINATOR, DOMAIN, MANUFACTURER, SensorType
@@ -14,9 +20,11 @@ _LOGGER = logging.getLogger(__name__)
 PARALLEL_UPDATES = 1
 
 
-async def async_setup_entry(hass, entry, async_add_entities):
+async def async_setup_entry(
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
+) -> None:
     """Set up Switchbot sensor based on a config entry."""
-    coordinator = hass.data[DOMAIN][DATA_COORDINATOR]
+    coordinator: SwitchbotDataUpdateCoordinator = hass.data[DOMAIN][DATA_COORDINATOR]
 
     sensors = []
 
@@ -43,8 +51,16 @@ async def async_setup_entry(hass, entry, async_add_entities):
 class SwitchBotSensor(CoordinatorEntity, Entity):
     """Representation of a Switchbot sensor."""
 
+    coordinator: SwitchbotDataUpdateCoordinator
+
     def __init__(
-        self, coordinator, idx, item, sensor_type_name, mac, switchbot_name
+        self,
+        coordinator: SwitchbotDataUpdateCoordinator,
+        idx: str,
+        item: str,
+        sensor_type_name: str,
+        mac: str,
+        switchbot_name: str,
     ) -> None:
         """Initialize the Switchbot sensor."""
         super().__init__(coordinator)
@@ -76,12 +92,12 @@ class SwitchBotSensor(CoordinatorEntity, Entity):
         return self._sensor_type[1]
 
     @property
-    def state(self):
+    def state(self) -> bool:
         """Return the state of the sensor."""
         return self.coordinator.data[self._idx]["data"][self._sensor]
 
     @property
-    def device_info(self):
+    def device_info(self) -> DeviceInfo:
         """Return the device_info of the device."""
         return {
             "identifiers": {(DOMAIN, self._mac.replace(":", ""))},

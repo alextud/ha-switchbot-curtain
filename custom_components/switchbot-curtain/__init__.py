@@ -1,8 +1,9 @@
 """Support for Switchbot devices."""
 from asyncio import Lock
 
-from homeassistant.exceptions import ConfigEntryNotReady
 import switchbot  # pylint: disable=import-error
+
+from homeassistant.exceptions import ConfigEntryNotReady
 
 from .const import (
     CONF_RETRY_COUNT,
