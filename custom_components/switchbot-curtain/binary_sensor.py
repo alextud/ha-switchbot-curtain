@@ -4,9 +4,6 @@ from __future__ import annotations
 import logging
 
 from homeassistant.components.binary_sensor import BinarySensorEntity
-from homeassistant.components.switchbot.coordinator import (
-    SwitchbotDataUpdateCoordinator,
-)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_MAC, CONF_NAME
 from homeassistant.core import HomeAssistant
@@ -15,6 +12,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DATA_COORDINATOR, DOMAIN, MANUFACTURER, BinarySensorType
+from .coordinator import SwitchbotDataUpdateCoordinator
 
 # Initialize the logger
 _LOGGER = logging.getLogger(__name__)

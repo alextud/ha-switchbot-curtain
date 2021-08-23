@@ -14,9 +14,6 @@ from homeassistant.components.cover import (
     SUPPORT_STOP,
     CoverEntity,
 )
-from homeassistant.components.switchbot.coordinator import (
-    SwitchbotDataUpdateCoordinator,
-)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_MAC, CONF_NAME, CONF_PASSWORD, CONF_SENSOR_TYPE
 from homeassistant.core import HomeAssistant
@@ -32,6 +29,7 @@ from .const import (
     DOMAIN,
     MANUFACTURER,
 )
+from .coordinator import SwitchbotDataUpdateCoordinator
 
 # Initialize the logger
 _LOGGER = logging.getLogger(__name__)
