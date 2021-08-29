@@ -23,27 +23,26 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     """Set up Switchbot curtain based on a config entry."""
-    coordinator: SwitchbotDataUpdateCoordinator = hass.data[DOMAIN][DATA_COORDINATOR]
+    coordinator: SwitchbotDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id][
+        DATA_COORDINATOR
+    ]
 
     binary_sensors = []
 
-    for idx in coordinator.data:
-        if idx == entry.unique_id.lower():
-
-            if coordinator.data[idx].get("data"):
-                for item in coordinator.data[idx].get("data"):
-                    if item in BinarySensorType.__members__:
-                        sensor_type_name = getattr(BinarySensorType, item).value
-                        binary_sensors.append(
-                            SwitchBotBinarySensor(
-                                coordinator,
-                                idx,
-                                item,
-                                sensor_type_name,
-                                entry.data[CONF_MAC],
-                                entry.data[CONF_NAME],
-                            )
-                        )
+    if coordinator.data[entry.unique_id.lower()].get("data"):
+        for item in coordinator.data[entry.unique_id.lower()].get("data"):
+            if item in BinarySensorType.__members__:
+                sensor_type_name = getattr(BinarySensorType, item).value
+                binary_sensors.append(
+                    SwitchBotBinarySensor(
+                        coordinator,
+                        entry.unique_id.lower(),
+                        item,
+                        sensor_type_name,
+                        entry.data[CONF_MAC],
+                        entry.data[CONF_NAME],
+                    )
+                )
 
     async_add_entities(binary_sensors)
 

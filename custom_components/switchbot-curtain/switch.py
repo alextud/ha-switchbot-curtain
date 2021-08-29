@@ -75,24 +75,23 @@ async def async_setup_entry(
     async_add_entities: entity_platform.AddEntitiesCallback,
 ) -> None:
     """Set up Switchbot based on a config entry."""
-    coordinator: SwitchbotDataUpdateCoordinator = hass.data[DOMAIN][DATA_COORDINATOR]
+    coordinator: SwitchbotDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id][
+        DATA_COORDINATOR
+    ]
 
     bot_device = []
 
     if entry.data[CONF_SENSOR_TYPE] == ATTR_BOT:
-        for idx in coordinator.data:
-            if idx == entry.unique_id.lower():
-
-                bot_device.append(
-                    SwitchBot(
-                        coordinator,
-                        idx,
-                        entry.data[CONF_MAC],
-                        entry.data[CONF_NAME],
-                        entry.data.get(CONF_PASSWORD, None),
-                        entry.options[CONF_RETRY_COUNT],
-                    )
-                )
+        bot_device.append(
+            SwitchBot(
+                coordinator,
+                entry.unique_id.lower(),
+                entry.data[CONF_MAC],
+                entry.data[CONF_NAME],
+                entry.data.get(CONF_PASSWORD, None),
+                entry.options[CONF_RETRY_COUNT],
+            )
+        )
 
     async_add_entities(bot_device)
 

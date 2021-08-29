@@ -11,7 +11,7 @@ DEFAULT_NAME = "Switchbot"
 
 # Config Defaults
 DEFAULT_RETRY_COUNT = 3
-DEFAULT_RETRY_TIMEOUT = 5
+DEFAULT_RETRY_TIMEOUT = 1
 DEFAULT_TIME_BETWEEN_UPDATE_COMMAND = 60
 DEFAULT_SCAN_TIMEOUT = 5
 
@@ -23,6 +23,7 @@ CONF_SCAN_TIMEOUT = "scan_timeout"
 
 # Data
 DATA_COORDINATOR = "coordinator"
+DATA_UNDO_UPDATE_LISTENER = "undo_update_listener"
 
 
 class SensorType(Enum):
