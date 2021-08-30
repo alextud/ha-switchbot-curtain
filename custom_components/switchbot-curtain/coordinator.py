@@ -40,7 +40,7 @@ class SwitchbotDataUpdateCoordinator(DataUpdateCoordinator):
 
         self.api_lock = api_lock
 
-    def _update_data(self) -> bool:
+    def _update_data(self) -> dict:
         """Fetch device states from switchbot api."""
 
         return self.switchbot_api.GetSwitchbotDevices().discover(

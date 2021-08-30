@@ -29,14 +29,14 @@ async def async_setup_entry(
 
     binary_sensors = []
 
-    if coordinator.data[entry.unique_id.lower()].get("data"):
-        for item in coordinator.data[entry.unique_id.lower()].get("data"):
+    if coordinator.data[entry.unique_id].get("data"):
+        for item in coordinator.data[entry.unique_id].get("data"):
             if item in BinarySensorType.__members__:
                 sensor_type_name = getattr(BinarySensorType, item).value
                 binary_sensors.append(
                     SwitchBotBinarySensor(
                         coordinator,
-                        entry.unique_id.lower(),
+                        entry.unique_id,
                         item,
                         sensor_type_name,
                         entry.data[CONF_MAC],
@@ -55,7 +55,7 @@ class SwitchBotBinarySensor(CoordinatorEntity, BinarySensorEntity):
     def __init__(
         self,
         coordinator: SwitchbotDataUpdateCoordinator,
-        idx: str,
+        idx: str | None,
         item: str,
         sensor_type_name: str,
         mac: str,
@@ -86,7 +86,7 @@ class SwitchBotBinarySensor(CoordinatorEntity, BinarySensorEntity):
         return self._sensor_type
 
     @property
-    def state(self) -> bool:
+    def is_on(self) -> bool:
         """Return the state of the sensor."""
         return self.coordinator.data[self._idx]["data"][self._sensor]
 

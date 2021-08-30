@@ -85,7 +85,7 @@ async def async_setup_entry(
         bot_device.append(
             SwitchBot(
                 coordinator,
-                entry.unique_id.lower(),
+                entry.unique_id,
                 entry.data[CONF_MAC],
                 entry.data[CONF_NAME],
                 entry.data.get(CONF_PASSWORD, None),
@@ -104,7 +104,7 @@ class SwitchBot(CoordinatorEntity, SwitchEntity, RestoreEntity):
     def __init__(
         self,
         coordinator: SwitchbotDataUpdateCoordinator,
-        idx: str,
+        idx: str | None,
         mac: str,
         name: str,
         password: str,
@@ -113,7 +113,8 @@ class SwitchBot(CoordinatorEntity, SwitchEntity, RestoreEntity):
         """Initialize the Switchbot."""
         super().__init__(coordinator)
         self._idx = idx
-        self._last_run_success = None
+        self._state: bool | None = None
+        self._last_run_success: bool | None = None
         self._model = self.coordinator.data[self._idx]["modelName"]
         self.switchbot_name = name
         self._mac = mac
@@ -128,7 +129,7 @@ class SwitchBot(CoordinatorEntity, SwitchEntity, RestoreEntity):
         last_state = await self.async_get_last_state()
         if not last_state:
             return
-        self._attr_state = last_state.state == "off"
+        self._state = last_state.state == "on"
         self._last_run_success = last_state.attributes["last_run_success"]
 
     async def async_turn_on(self, **kwargs: Any) -> None:

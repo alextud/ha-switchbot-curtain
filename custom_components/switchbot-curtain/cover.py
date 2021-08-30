@@ -50,7 +50,7 @@ async def async_setup_entry(
         curtain_device.append(
             SwitchBotCurtain(
                 coordinator,
-                entry.unique_id.lower(),
+                entry.unique_id,
                 entry.data[CONF_MAC],
                 entry.data[CONF_NAME],
                 entry.data.get(CONF_PASSWORD, None),
@@ -69,7 +69,7 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
     def __init__(
         self,
         coordinator: SwitchbotDataUpdateCoordinator,
-        idx: str,
+        idx: str | None,
         mac: str,
         name: str,
         password: str,
@@ -77,7 +77,7 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
     ) -> None:
         """Initialize the Switchbot."""
         super().__init__(coordinator)
-        self._last_run_success = None
+        self._last_run_success: bool | None = None
         self._idx = idx
         self.switchbot_name = name
         self._mac = mac
@@ -96,7 +96,6 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
             self._attr_current_cover_position = last_state.attributes[
                 ATTR_CURRENT_POSITION
             ]
-            self._attr_state = last_state.state
             self._last_run_success = last_state.attributes["last_run_success"]
 
     @property
@@ -125,12 +124,12 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
         return DEVICE_CLASS_CURTAIN
 
     @property
-    def supported_features(self) -> str:
+    def supported_features(self) -> int:
         """Flag supported features."""
         return SUPPORT_OPEN | SUPPORT_CLOSE | SUPPORT_STOP | SUPPORT_SET_POSITION
 
     @property
-    def is_closed(self) -> int:
+    def is_closed(self) -> bool | None:
         """Return if the cover is closed."""
         return self.coordinator.data[self._idx]["data"]["position"] <= 20
 
