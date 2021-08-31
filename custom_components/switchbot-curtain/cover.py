@@ -65,6 +65,11 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
     """Representation of a Switchbot."""
 
     coordinator: SwitchbotDataUpdateCoordinator
+    _attr_device_class = DEVICE_CLASS_CURTAIN
+    _attr_supported_features = (
+        SUPPORT_OPEN | SUPPORT_CLOSE | SUPPORT_STOP | SUPPORT_SET_POSITION
+    )
+    _attr_assumed_state = True
 
     def __init__(
         self,
@@ -79,9 +84,15 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
         super().__init__(coordinator)
         self._last_run_success: bool | None = None
         self._idx = idx
-        self.switchbot_name = name
+        self._attr_unique_id = idx
+        self._attr_name = name
         self._mac = mac
-        self._model = self.coordinator.data[self._idx]["modelName"]
+        self._attr_device_info: DeviceInfo = {
+            "identifiers": {(DOMAIN, self._mac.replace(":", ""))},
+            "name": self._attr_name,
+            "model": self.coordinator.data[self._idx]["modelName"],
+            "manufacturer": MANUFACTURER,
+        }
         self._device = self.coordinator.switchbot_api.SwitchbotCurtain(
             mac=mac, password=password, retry_count=retry_count
         )
@@ -99,34 +110,9 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
             self._last_run_success = last_state.attributes["last_run_success"]
 
     @property
-    def assumed_state(self) -> bool:
-        """Return true if unable to access real state of entity."""
-        return True
-
-    @property
-    def unique_id(self) -> str:
-        """Return a unique, Home Assistant friendly identifier for this entity."""
-        return self._mac.replace(":", "")
-
-    @property
-    def name(self) -> str:
-        """Return the name of the switch."""
-        return self.switchbot_name
-
-    @property
     def device_state_attributes(self) -> dict:
         """Return the state attributes."""
         return {"last_run_success": self._last_run_success, "MAC": self._mac}
-
-    @property
-    def device_class(self) -> str:
-        """Return the class of this device."""
-        return DEVICE_CLASS_CURTAIN
-
-    @property
-    def supported_features(self) -> int:
-        """Flag supported features."""
-        return SUPPORT_OPEN | SUPPORT_CLOSE | SUPPORT_STOP | SUPPORT_SET_POSITION
 
     @property
     def is_closed(self) -> bool | None:
@@ -192,13 +178,3 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
     def current_cover_position(self) -> int:
         """Return the current position of cover shutter."""
         return self.coordinator.data[self._idx]["data"]["position"]
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        """Return the device_info of the device."""
-        return {
-            "identifiers": {(DOMAIN, self._mac.replace(":", ""))},
-            "name": self.switchbot_name,
-            "model": self._model,
-            "manufacturer": MANUFACTURER,
-        }

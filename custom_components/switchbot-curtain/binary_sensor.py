@@ -30,15 +30,15 @@ async def async_setup_entry(
     binary_sensors = []
 
     if coordinator.data[entry.unique_id].get("data"):
-        for item in coordinator.data[entry.unique_id].get("data"):
-            if item in BinarySensorType.__members__:
-                sensor_type_name = getattr(BinarySensorType, item).value
+        for sensor in coordinator.data[entry.unique_id].get("data"):
+            if sensor in BinarySensorType.__members__:
+                device_class = getattr(BinarySensorType, sensor).value
                 binary_sensors.append(
                     SwitchBotBinarySensor(
                         coordinator,
                         entry.unique_id,
-                        item,
-                        sensor_type_name,
+                        sensor,
+                        device_class,
                         entry.data[CONF_MAC],
                         entry.data[CONF_NAME],
                     )
@@ -56,46 +56,28 @@ class SwitchBotBinarySensor(CoordinatorEntity, BinarySensorEntity):
         self,
         coordinator: SwitchbotDataUpdateCoordinator,
         idx: str | None,
-        item: str,
-        sensor_type_name: str,
+        sensor: str,
+        device_class: str,
         mac: str,
         switchbot_name: str,
     ) -> None:
         """Initialize the Switchbot sensor."""
         super().__init__(coordinator)
         self._idx = idx
-        self._sensor = item
-        self.switchbot_name = switchbot_name
+        self._sensor = sensor
         self._mac = mac
-        self._sensor_type = sensor_type_name
+        self._attr_device_class = device_class
         self._model = self.coordinator.data[self._idx]["modelName"]
-
-    @property
-    def unique_id(self) -> str:
-        """Return a unique, Home Assistant friendly identifier for this entity."""
-        return f"{self._mac.replace(':', '')}-{self._sensor}"
-
-    @property
-    def name(self) -> str:
-        """Return the name of the switch."""
-        return f"{self.switchbot_name}.{self._sensor}"
-
-    @property
-    def device_class(self) -> str | None:
-        """Return the class of this device."""
-        return self._sensor_type
+        self._attr_unique_id = f"{idx}-{sensor}"
+        self._attr_name = f"{switchbot_name}.{sensor}"
+        self._attr_device_info: DeviceInfo = {
+            "identifiers": {(DOMAIN, self._mac.replace(":", ""))},
+            "name": switchbot_name,
+            "model": self._model,
+            "manufacturer": MANUFACTURER,
+        }
 
     @property
     def is_on(self) -> bool:
         """Return the state of the sensor."""
         return self.coordinator.data[self._idx]["data"][self._sensor]
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        """Return the device_info of the device."""
-        return {
-            "identifiers": {(DOMAIN, self._mac.replace(":", ""))},
-            "name": self.switchbot_name,
-            "model": self._model,
-            "manufacturer": MANUFACTURER,
-        }
