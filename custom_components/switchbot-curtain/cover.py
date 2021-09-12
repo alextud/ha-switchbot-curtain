@@ -17,6 +17,7 @@ from homeassistant.components.cover import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_MAC, CONF_NAME, CONF_PASSWORD, CONF_SENSOR_TYPE
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
@@ -44,10 +45,11 @@ async def async_setup_entry(
         DATA_COORDINATOR
     ]
 
-    curtain_device = []
+    if entry.data[CONF_SENSOR_TYPE] != ATTR_CURTAIN:
+        return
 
-    if entry.data[CONF_SENSOR_TYPE] == ATTR_CURTAIN:
-        curtain_device.append(
+    async_add_entities(
+        [
             SwitchBotCurtain(
                 coordinator,
                 entry.unique_id,
@@ -56,9 +58,8 @@ async def async_setup_entry(
                 entry.data.get(CONF_PASSWORD, None),
                 entry.options[CONF_RETRY_COUNT],
             )
-        )
-
-    async_add_entities(curtain_device)
+        ]
+    )
 
 
 class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
@@ -88,7 +89,7 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
         self._attr_name = name
         self._mac = mac
         self._attr_device_info: DeviceInfo = {
-            "identifiers": {(DOMAIN, self._mac.replace(":", ""))},
+            "connections": {(dr.CONNECTION_NETWORK_MAC, self._mac)},
             "name": self._attr_name,
             "model": self.coordinator.data[self._idx]["modelName"],
             "manufacturer": MANUFACTURER,
@@ -112,7 +113,7 @@ class SwitchBotCurtain(CoordinatorEntity, CoverEntity, RestoreEntity):
     @property
     def device_state_attributes(self) -> dict:
         """Return the state attributes."""
-        return {"last_run_success": self._last_run_success, "MAC": self._mac}
+        return {"last_run_success": self._last_run_success, "mac_address": self._mac}
 
     @property
     def is_closed(self) -> bool | None:

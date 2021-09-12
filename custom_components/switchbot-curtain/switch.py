@@ -20,7 +20,11 @@ from homeassistant.const import (
     STATE_ON,
 )
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import config_validation as cv, entity_platform
+from homeassistant.helpers import (
+    config_validation as cv,
+    device_registry as dr,
+    entity_platform,
+)
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
@@ -85,10 +89,11 @@ async def async_setup_entry(
         DATA_COORDINATOR
     ]
 
-    bot_device = []
+    if entry.data[CONF_SENSOR_TYPE] != ATTR_BOT:
+        return
 
-    if entry.data[CONF_SENSOR_TYPE] == ATTR_BOT:
-        bot_device.append(
+    async_add_entities(
+        [
             SwitchBot(
                 coordinator,
                 entry.unique_id,
@@ -97,9 +102,8 @@ async def async_setup_entry(
                 entry.data.get(CONF_PASSWORD, None),
                 entry.options[CONF_RETRY_COUNT],
             )
-        )
-
-    async_add_entities(bot_device)
+        ]
+    )
 
 
 class SwitchBot(CoordinatorEntity, SwitchEntity, RestoreEntity):
@@ -128,7 +132,7 @@ class SwitchBot(CoordinatorEntity, SwitchEntity, RestoreEntity):
         self._attr_unique_id = self._mac.replace(":", "")
         self._attr_name = name
         self._attr_device_info: DeviceInfo = {
-            "identifiers": {(DOMAIN, self._mac.replace(":", ""))},
+            "connections": {(dr.CONNECTION_NETWORK_MAC, self._mac)},
             "name": name,
             "model": self.coordinator.data[self._idx]["modelName"],
             "manufacturer": MANUFACTURER,
@@ -184,6 +188,6 @@ class SwitchBot(CoordinatorEntity, SwitchEntity, RestoreEntity):
         """Return the state attributes."""
         return {
             "last_run_success": self._last_run_success,
-            "MAC": self._mac,
+            "mac_address": self._mac,
             "switch_mode": self.coordinator.data[self._idx]["data"]["switchMode"],
         }

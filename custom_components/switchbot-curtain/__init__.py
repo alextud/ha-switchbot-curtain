@@ -8,12 +8,12 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 
 from .const import (
+    BTLE_LOCK,
     CONF_RETRY_COUNT,
     CONF_RETRY_TIMEOUT,
     CONF_SCAN_TIMEOUT,
     CONF_TIME_BETWEEN_UPDATE_COMMAND,
     DATA_COORDINATOR,
-    DATA_UNDO_UPDATE_LISTENER,
     DEFAULT_RETRY_COUNT,
     DEFAULT_RETRY_TIMEOUT,
     DEFAULT_SCAN_TIMEOUT,
@@ -41,18 +41,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Use same coordinator instance for all entities.
     # Uses BTLE advertisement data, all Switchbot devices in range is stored here.
-    if hass.data.get(DOMAIN):
-        for item in hass.config_entries.async_entries(domain=DOMAIN):
-            if hass.data[DOMAIN].get(item.entry_id):
-                coordinator = hass.data[DOMAIN][item.entry_id].get(DATA_COORDINATOR)
-                break
+    if DATA_COORDINATOR not in hass.data[DOMAIN]:
 
-    else:
-        switchbot.DEFAULT_RETRY_TIMEOUT = entry.options[CONF_RETRY_TIMEOUT]
-
+        # Check if asyncio.lock is stored in hass data.
         # BTLE has issues with multiple connections,
         # so we use a lock to ensure that only one API request is reaching it at a time:
-        api_lock = Lock()
+        if BTLE_LOCK not in hass.data[DOMAIN]:
+            hass.data[DOMAIN][BTLE_LOCK] = Lock()
+
+        if CONF_RETRY_TIMEOUT not in hass.data[DOMAIN]:
+            hass.data[DOMAIN][CONF_RETRY_TIMEOUT] = entry.options[CONF_RETRY_TIMEOUT]
+
+        switchbot.DEFAULT_RETRY_TIMEOUT = hass.data[DOMAIN][CONF_RETRY_TIMEOUT]
 
         # Store api in coordinator.
         coordinator = SwitchbotDataUpdateCoordinator(
@@ -61,20 +61,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             api=switchbot,
             retry_count=entry.options[CONF_RETRY_COUNT],
             scan_timeout=entry.options[CONF_SCAN_TIMEOUT],
-            api_lock=api_lock,
+            api_lock=hass.data[DOMAIN][BTLE_LOCK],
         )
 
-        await coordinator.async_config_entry_first_refresh()
+        hass.data[DOMAIN][DATA_COORDINATOR] = coordinator
+
+    else:
+        coordinator = hass.data[DOMAIN][DATA_COORDINATOR]
+
+    await coordinator.async_config_entry_first_refresh()
 
     if not coordinator.last_update_success:
         raise ConfigEntryNotReady
 
-    undo_listener = entry.add_update_listener(_async_update_listener)
+    entry.async_on_unload(entry.add_update_listener(_async_update_listener))
 
-    hass.data[DOMAIN][entry.entry_id] = {
-        DATA_COORDINATOR: coordinator,
-        DATA_UNDO_UPDATE_LISTENER: undo_listener,
-    }
+    hass.data[DOMAIN][entry.entry_id] = {DATA_COORDINATOR: coordinator}
 
     hass.config_entries.async_setup_platforms(entry, PLATFORMS)
 
@@ -86,12 +88,31 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
     if unload_ok:
-        hass.data[DOMAIN][entry.entry_id][DATA_UNDO_UPDATE_LISTENER]()
+        # Update entry options if CONF_RETRY_TIMEOUT changed.
+        if entry.options[CONF_RETRY_TIMEOUT] != hass.data[DOMAIN][CONF_RETRY_TIMEOUT]:
+            options = {**entry.options}
+            options[CONF_RETRY_TIMEOUT] = hass.data[DOMAIN][CONF_RETRY_TIMEOUT]
+            hass.config_entries.async_update_entry(entry, options=options)
+
         hass.data[DOMAIN].pop(entry.entry_id)
+
+        if len(hass.config_entries.async_entries(DOMAIN)) == 0:
+            hass.data.pop(DOMAIN)
 
     return unload_ok
 
 
 async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Handle options update."""
-    await hass.config_entries.async_reload(entry.entry_id)
+
+    # If CONF_RETRY_TIMEOUT changed,
+    # Update hass data and reload all entries.
+    if entry.options[CONF_RETRY_TIMEOUT] != hass.data[DOMAIN][CONF_RETRY_TIMEOUT]:
+        hass.data[DOMAIN][CONF_RETRY_TIMEOUT] = entry.options[CONF_RETRY_TIMEOUT]
+        hass.data[DOMAIN].pop(DATA_COORDINATOR)
+
+        for item in hass.config_entries.async_entries(DOMAIN):
+            await hass.config_entries.async_reload(item.entry_id)
+
+    else:
+        await hass.config_entries.async_reload(entry.entry_id)

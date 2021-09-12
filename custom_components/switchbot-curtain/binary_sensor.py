@@ -1,12 +1,11 @@
 """Support for SwitchBot binary sensors."""
 from __future__ import annotations
 
-import logging
-
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_MAC, CONF_NAME
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -14,8 +13,6 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DATA_COORDINATOR, DOMAIN, MANUFACTURER, BinarySensorType
 from .coordinator import SwitchbotDataUpdateCoordinator
 
-# Initialize the logger
-_LOGGER = logging.getLogger(__name__)
 PARALLEL_UPDATES = 1
 
 
@@ -71,7 +68,7 @@ class SwitchBotBinarySensor(CoordinatorEntity, BinarySensorEntity):
         self._attr_unique_id = f"{idx}-{sensor}"
         self._attr_name = f"{switchbot_name}.{sensor}"
         self._attr_device_info: DeviceInfo = {
-            "identifiers": {(DOMAIN, self._mac.replace(":", ""))},
+            "connections": {(dr.CONNECTION_NETWORK_MAC, self._mac)},
             "name": switchbot_name,
             "model": self._model,
             "manufacturer": MANUFACTURER,
