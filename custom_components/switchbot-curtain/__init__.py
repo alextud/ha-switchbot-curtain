@@ -9,6 +9,7 @@ from homeassistant.exceptions import ConfigEntryNotReady
 
 from .const import (
     BTLE_LOCK,
+    COMMON_OPTIONS,
     CONF_RETRY_COUNT,
     CONF_RETRY_TIMEOUT,
     CONF_SCAN_TIMEOUT,
@@ -49,21 +50,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if BTLE_LOCK not in hass.data[DOMAIN]:
             hass.data[DOMAIN][BTLE_LOCK] = Lock()
 
-        if CONF_RETRY_TIMEOUT not in hass.data[DOMAIN]:
-            hass.data[DOMAIN][CONF_RETRY_TIMEOUT] = entry.options[CONF_RETRY_TIMEOUT]
+        if COMMON_OPTIONS not in hass.data[DOMAIN]:
+            hass.data[DOMAIN][COMMON_OPTIONS] = {**entry.options}
 
-        if CONF_SCAN_TIMEOUT not in hass.data[DOMAIN]:
-            hass.data[DOMAIN][CONF_SCAN_TIMEOUT] = entry.options[CONF_SCAN_TIMEOUT]
-
-        switchbot.DEFAULT_RETRY_TIMEOUT = hass.data[DOMAIN][CONF_RETRY_TIMEOUT]
+        switchbot.DEFAULT_RETRY_TIMEOUT = hass.data[DOMAIN][COMMON_OPTIONS][
+            CONF_RETRY_TIMEOUT
+        ]
 
         # Store api in coordinator.
         coordinator = SwitchbotDataUpdateCoordinator(
             hass,
-            update_interval=entry.options[CONF_TIME_BETWEEN_UPDATE_COMMAND],
+            update_interval=hass.data[DOMAIN][COMMON_OPTIONS][
+                CONF_TIME_BETWEEN_UPDATE_COMMAND
+            ],
             api=switchbot,
-            retry_count=entry.options[CONF_RETRY_COUNT],
-            scan_timeout=hass.data[DOMAIN][CONF_SCAN_TIMEOUT],
+            retry_count=hass.data[DOMAIN][COMMON_OPTIONS][CONF_RETRY_COUNT],
+            scan_timeout=hass.data[DOMAIN][COMMON_OPTIONS][CONF_SCAN_TIMEOUT],
             api_lock=hass.data[DOMAIN][BTLE_LOCK],
         )
 
@@ -91,14 +93,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
     if unload_ok:
-        # If CONF_RETRY_TIMEOUT or CONF_SCAN_TIMEOUT changed, update entry
-        if (
-            entry.options[CONF_RETRY_TIMEOUT] != hass.data[DOMAIN][CONF_RETRY_TIMEOUT]
-            or entry.options[CONF_SCAN_TIMEOUT] != hass.data[DOMAIN][CONF_SCAN_TIMEOUT]
-        ):
-            options = {**entry.options}
-            options[CONF_RETRY_TIMEOUT] = hass.data[DOMAIN][CONF_RETRY_TIMEOUT]
-            options[CONF_SCAN_TIMEOUT] = hass.data[DOMAIN][CONF_SCAN_TIMEOUT]
+        # Update entity options stored in hass.
+        if {**entry.options} != hass.data[DOMAIN][COMMON_OPTIONS]:
+            options = hass.data[DOMAIN][COMMON_OPTIONS]
             hass.config_entries.async_update_entry(entry, options=options)
 
         hass.data[DOMAIN].pop(entry.entry_id)
@@ -112,14 +109,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Handle options update."""
 
-    # If CONF_RETRY_TIMEOUT or CONF_SCAN_TIMEOUT changed,
-    # Update hass data and reload all entries.
-    if (
-        entry.options[CONF_RETRY_TIMEOUT] != hass.data[DOMAIN][CONF_RETRY_TIMEOUT]
-        or entry.options[CONF_SCAN_TIMEOUT] != hass.data[DOMAIN][CONF_SCAN_TIMEOUT]
-    ):
-        hass.data[DOMAIN][CONF_RETRY_TIMEOUT] = entry.options[CONF_RETRY_TIMEOUT]
-        hass.data[DOMAIN][CONF_SCAN_TIMEOUT] = entry.options[CONF_SCAN_TIMEOUT]
+    # Update entity options stored in hass.
+    if {**entry.options} != hass.data[DOMAIN][COMMON_OPTIONS]:
+        hass.data[DOMAIN][COMMON_OPTIONS] = {**entry.options}
         hass.data[DOMAIN].pop(DATA_COORDINATOR)
 
         for item in hass.config_entries.async_entries(DOMAIN):
