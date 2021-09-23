@@ -49,22 +49,22 @@ async def async_setup_entry(
         DATA_COORDINATOR
     ]
 
-    sensors = []
+    if not coordinator.data[entry.unique_id].get("data"):
+        return
 
-    if coordinator.data[entry.unique_id].get("data"):
-        for sensor in coordinator.data[entry.unique_id].get("data"):
-            if sensor in SENSOR_TYPES:
-                sensors.append(
-                    SwitchBotSensor(
-                        coordinator,
-                        entry.unique_id,
-                        sensor,
-                        entry.data[CONF_MAC],
-                        entry.data[CONF_NAME],
-                    )
-                )
-
-    async_add_entities(sensors)
+    async_add_entities(
+        [
+            SwitchBotSensor(
+                coordinator,
+                entry.unique_id,
+                sensor,
+                entry.data[CONF_MAC],
+                entry.data[CONF_NAME],
+            )
+            for sensor in coordinator.data[entry.unique_id]["data"]
+            if sensor in SENSOR_TYPES
+        ]
+    )
 
 
 class SwitchBotSensor(SwitchbotEntity, SensorEntity):
@@ -81,9 +81,10 @@ class SwitchBotSensor(SwitchbotEntity, SensorEntity):
         switchbot_name: str,
     ) -> None:
         """Initialize the Switchbot sensor."""
-        super().__init__(coordinator, idx, mac, name=f"{switchbot_name}.{sensor}")
+        super().__init__(coordinator, idx, mac, name=switchbot_name)
         self._sensor = sensor
         self._attr_unique_id = f"{idx}-{sensor}"
+        self._attr_name = f"{switchbot_name}.{sensor}"
         self.entity_description = SENSOR_TYPES[sensor]
 
     @property
