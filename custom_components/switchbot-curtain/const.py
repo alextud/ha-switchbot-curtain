@@ -1,6 +1,4 @@
 """Constants for the switchbot integration."""
-from enum import Enum
-
 DOMAIN = "switchbot-curtain"
 MANUFACTURER = "switchbot"
 
@@ -8,6 +6,7 @@ MANUFACTURER = "switchbot"
 ATTR_BOT = "bot"
 ATTR_CURTAIN = "curtain"
 DEFAULT_NAME = "Switchbot"
+SUPPORTED_MODEL_TYPES = {"WoHand": ATTR_BOT, "WoCurtain": ATTR_CURTAIN}
 
 # Config Defaults
 DEFAULT_RETRY_COUNT = 3
@@ -25,19 +24,3 @@ CONF_SCAN_TIMEOUT = "scan_timeout"
 DATA_COORDINATOR = "coordinator"
 BTLE_LOCK = "btle_lock"
 COMMON_OPTIONS = "common_options"
-
-
-class SensorType(Enum):
-    """Sensors and their types to expose in HA."""
-
-    # pylint: disable=invalid-name
-    lightLevel = ["illuminance", "Level"]
-    battery = ["battery", "%"]
-    rssi = ["signal_strength", "dBm"]
-
-
-class BinarySensorType(Enum):
-    """Binary_sensors and their types to expose in HA."""
-
-    # pylint: disable=invalid-name
-    calibration = "None"
