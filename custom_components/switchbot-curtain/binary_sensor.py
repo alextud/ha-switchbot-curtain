@@ -19,8 +19,6 @@ PARALLEL_UPDATES = 1
 BINARY_SENSOR_TYPES: dict[str, BinarySensorEntityDescription] = {
     "calibration": BinarySensorEntityDescription(
         key="calibration",
-        device_class=None,
-        unit_of_measurement=None,
     ),
 }
 
@@ -32,6 +30,9 @@ async def async_setup_entry(
     coordinator: SwitchbotDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id][
         DATA_COORDINATOR
     ]
+
+    if not coordinator.data[entry.unique_id].get("data"):
+        return
 
     async_add_entities(
         [
@@ -65,7 +66,7 @@ class SwitchBotBinarySensor(SwitchbotEntity, BinarySensorEntity):
         super().__init__(coordinator, idx, mac, name=switchbot_name)
         self._sensor = binary_sensor
         self._attr_unique_id = f"{idx}-{binary_sensor}"
-        self._attr_name = f"{switchbot_name}.{binary_sensor}"
+        self._attr_name = f"{switchbot_name} {binary_sensor.title()}"
         self.entity_description = BINARY_SENSOR_TYPES[binary_sensor]
 
     @property
