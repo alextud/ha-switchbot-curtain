@@ -104,15 +104,16 @@ class SwitchbotConfigFlow(ConfigFlow, domain=DOMAIN):
 
         # Get devices already configured.
         configured_devices = {
-            item.data.get(CONF_MAC) for item in self._async_current_entries()
+            item.data[CONF_MAC]
+            for item in self._async_current_entries(include_ignore=False)
         }
 
         # Get supported devices not yet configured.
         unconfigured_devices = {
-            device["mac_address"]
+            device["mac_address"]: f"{device['mac_address']} {device['modelName']}"
             for device in self._discovered_devices.values()
-            if device.get("modelName") in SUPPORTED_MODEL_TYPES
-            if device.get("mac_address") not in configured_devices
+            if device["modelName"] in SUPPORTED_MODEL_TYPES
+            and device["mac_address"] not in configured_devices
         }
 
         if not unconfigured_devices:
@@ -120,9 +121,9 @@ class SwitchbotConfigFlow(ConfigFlow, domain=DOMAIN):
 
         data_schema = vol.Schema(
             {
+                vol.Required(CONF_MAC): vol.In(unconfigured_devices),
                 vol.Required(CONF_NAME): str,
                 vol.Optional(CONF_PASSWORD): str,
-                vol.Required(CONF_MAC): vol.In(unconfigured_devices),
             }
         )
 
